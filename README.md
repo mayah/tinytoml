@@ -33,23 +33,37 @@ toml::Parser parser(ifs);
 
 toml::Value v = parser.parse();
 // If toml file is valid, v would be valid.
+// Otherwise, you can get an error reason by calling Parser::errorReason().
 if (!v.valid()) {
-    cout << "some error occured";
+    cout << parser.errorReason() << endl;
     return;
 }
 
-// You canget a value using get().
-// If type error occured, your program will die.
+// You can get a value using get().
+// If type error occured, std::runtime_error is raised.
 cout << v.get<string>("foo.bar") << endl;
 
 // You can find a value by find().
 // If found, non-null pointer will be returned.
-const toml::Value* x = v.find("bar");
-
 // You can check the type of value with is().
 // You can get the inner value by as().
-if (x && x->is<string>()) {
+const toml::Value* x = v.find("bar");
+if (x && x->is<std::string>()) {
     cout << x->as<string>() << endl;
+} else if (x && x->is<int>()) {
+    cout << x->as<int>() << endl;
+}
+
+// Note: the inner value of integer value is actually int64_t,
+// however, you can use 'int' for convenience.
+const toml::Value z = ...;
+int x = z->as<int>();
+int y = z->as<int64_t>();
+// toml::Array is actually std::vector<toml::Value>.
+// So, you can use range based for, etc.
+const toml::Array& ar = z->as<toml::Array>();
+for (const toml::Value& v : ar) {
+    ...
 }
 ```
 
