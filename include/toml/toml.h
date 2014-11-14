@@ -27,7 +27,7 @@ inline void failwith(const char* reason, ...)
     vsprintf(buf, reason, va);
     va_end(va);
 
-    throw std::runtime_error(reason);
+    throw std::runtime_error(buf);
 }
 
 inline std::vector<std::string> split(const std::string& s, char separator)
