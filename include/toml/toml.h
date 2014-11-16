@@ -150,6 +150,7 @@ public:
     void erase(const std::string& key);
     const Value* find(const std::string& key) const;
     Value* find(const std::string& key);
+    bool has(const std::string& key) const { return find(key) != nullptr; }
 
     // For array value
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;

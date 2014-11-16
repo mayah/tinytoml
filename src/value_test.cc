@@ -170,6 +170,14 @@ TEST(ValueTest, tableFind)
     EXPECT_EQ(2, v.find("foo")->as<int>());
 }
 
+TEST(ValueTest, tableHas)
+{
+    toml::Value v;
+    v.set("foo", 1);
+    EXPECT_TRUE(v.has("foo"));
+    EXPECT_FALSE(v.has("bar"));
+}
+
 TEST(ValueTest, arrayFind)
 {
     toml::Value v;
