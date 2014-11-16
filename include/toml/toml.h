@@ -138,6 +138,9 @@ public:
     template<typename T> bool is() const;
     template<typename T> typename call_traits<T>::return_type as() const;
 
+    bool isNumber() const;
+    double asNumber() const;
+
     void write(std::ostream&, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
@@ -359,6 +362,22 @@ AS(Time, *time_)
 AS(Array, *array_)
 AS(Table, *table_)
 #undef AS
+
+inline bool Value::isNumber() const
+{
+    return is<int>() || is<double>();
+}
+
+inline double Value::asNumber() const
+{
+    if (is<int>())
+        return as<int>();
+    if (is<double>())
+        return as<double>();
+
+    failwith("type error: this value is %s but number is requested", typeToString(type_));
+    return 0.0;
+}
 
 inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
 {

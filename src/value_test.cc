@@ -143,3 +143,17 @@ TEST(ValueTest, table)
     EXPECT_EQ(1, v.get<int>("key1"));
     EXPECT_EQ(2, v.get<int>("key2"));
 }
+
+TEST(ValueTest, number)
+{
+    toml::Value v(1);
+    EXPECT_TRUE(v.isNumber());
+    EXPECT_EQ(1.0, v.asNumber());
+
+    v = 2.5;
+    EXPECT_TRUE(v.isNumber());
+    EXPECT_EQ(2.5, v.asNumber());
+
+    v = false;
+    EXPECT_FALSE(v.isNumber());
+}
