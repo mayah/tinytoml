@@ -149,10 +149,12 @@ public:
     Value* set(const std::string& key, const Value& v);
     void erase(const std::string& key);
     const Value* find(const std::string& key) const;
+    Value* find(const std::string& key);
 
     // For array value
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
     const Value* find(size_t index) const;
+    Value* find(size_t index);
     void push(const Value& v);
 
     Value* ensureTable(const std::string& key);
@@ -470,6 +472,30 @@ inline typename call_traits<T>::return_type Value::get(const std::string& key) c
     return obj->as<T>();
 }
 
+inline const Value* Value::find(const std::string& key) const
+{
+    if (!is<Table>())
+        return nullptr;
+
+    auto parts = split(key, '.');
+    auto lastKey = parts.back();
+    parts.pop_back();
+
+    const Value* current = this;
+    for (const auto& part : parts) {
+        current = current->findInternal(part);
+        if (!current || !current->is<Table>())
+            return nullptr;
+    }
+
+    return current->findInternal(lastKey);
+}
+
+inline Value* Value::find(const std::string& key)
+{
+    return const_cast<Value*>(const_cast<const Value*>(this)->find(key));
+}
+
 inline Value* Value::set(const std::string& key, const Value& v)
 {
     if (!valid())
@@ -493,9 +519,11 @@ inline void Value::erase(const std::string& key)
 template<typename T>
 inline typename call_traits<T>::return_type Value::get(size_t index) const
 {
-    if (!is<Array>()) {
+    if (!is<Array>())
         failwith("type must be array to do get(index).");
-    }
+
+    if (array_->size() <= index)
+        failwith("index out of bound");
 
     return (*array_)[index].as<T>();
 }
@@ -509,6 +537,11 @@ inline const Value* Value::find(size_t index) const
     return nullptr;
 }
 
+inline Value* Value::find(size_t index)
+{
+    return const_cast<Value*>(const_cast<const Value*>(this)->find(index));
+}
+
 inline void Value::push(const Value& v)
 {
     if (!valid())
@@ -517,25 +550,6 @@ inline void Value::push(const Value& v)
         failwith("type must be array to do push(Value).");
 
     array_->push_back(v);
-}
-
-inline const Value* Value::find(const std::string& key) const
-{
-    if (!is<Table>())
-        return nullptr;
-
-    auto parts = split(key, '.');
-    auto lastKey = parts.back();
-    parts.pop_back();
-
-    const Value* current = this;
-    for (const auto& part : parts) {
-        current = current->findInternal(part);
-        if (!current || !current->is<Table>())
-            return nullptr;
-    }
-
-    return current->findInternal(lastKey);
 }
 
 inline Value* Value::findInternal(const std::string& key)

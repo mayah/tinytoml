@@ -157,3 +157,27 @@ TEST(ValueTest, number)
     v = false;
     EXPECT_FALSE(v.isNumber());
 }
+
+TEST(ValueTest, tableFind)
+{
+    toml::Value v;
+    v.set("foo", 1);
+
+    toml::Value* x = v.find("foo");
+    ASSERT_TRUE(x != nullptr);
+    *x = 2;
+
+    EXPECT_EQ(2, v.find("foo")->as<int>());
+}
+
+TEST(ValueTest, arrayFind)
+{
+    toml::Value v;
+    v.push(1);
+
+    toml::Value* x = v.find(0);
+    ASSERT_TRUE(x != nullptr);
+    *x = 2;
+
+    EXPECT_EQ(2, v.find(0)->as<int>());
+}
