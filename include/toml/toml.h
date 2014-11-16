@@ -131,6 +131,7 @@ public:
     ~Value();
 
     size_t size() const;
+    bool empty() const;
     Type type() const { return type_; }
 
     bool valid() const { return type_ != NULL_TYPE; }
@@ -143,6 +144,7 @@ public:
     // For table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
+    void erase(const std::string& key);
     const Value* find(const std::string& key) const;
 
     // For array value
@@ -317,6 +319,11 @@ inline size_t Value::size() const
     }
 }
 
+inline bool Value::empty() const
+{
+    return size() == 0;
+}
+
 #define IS(ctype, ttype)                                \
 template<> inline bool Value::is<ctype>() const         \
 {                                                       \
@@ -454,6 +461,14 @@ inline Value* Value::set(const std::string& key, const Value& v)
 
     (*table_)[key] = v;
     return &(*table_)[key];
+}
+
+inline void Value::erase(const std::string& key)
+{
+    if (!is<Table>())
+        failwith("type must be table to do erase(key).");
+
+    table_->erase(key);
 }
 
 template<typename T>
