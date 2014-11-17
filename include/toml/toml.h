@@ -6,6 +6,7 @@
 #include <cstdarg>
 #include <cstdint>
 #include <ctime>
+#include <iomanip>
 #include <istream>
 #include <sstream>
 #include <stdexcept>
@@ -141,7 +142,7 @@ public:
     bool isNumber() const;
     double asNumber() const;
 
-    void write(std::ostream&, const std::string& keyPrefix = std::string()) const;
+    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     // For table value
@@ -382,23 +383,24 @@ inline double Value::asNumber() const
     return 0.0;
 }
 
-inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
+inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
 {
     switch (type_) {
     case NULL_TYPE:
         failwith("null type value is not a valid value");
         break;
     case BOOL_TYPE:
-        os << (bool_ ? "true" : "false");
+        (*os) << (bool_ ? "true" : "false");
         break;
     case INT_TYPE:
-        os << int_;
+        (*os) << int_;
         break;
-    case DOUBLE_TYPE:
-        os << double_;
+    case DOUBLE_TYPE: {
+        (*os) << std::fixed << std::showpoint << double_;
         break;
+    }
     case STRING_TYPE:
-        os << '"' << escapeString(*string_) << '"';
+        (*os) << '"' << escapeString(*string_) << '"';
         break;
     case TIME_TYPE: {
         time_t tt = std::chrono::system_clock::to_time_t(*time_);
@@ -406,16 +408,16 @@ inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
         gmtime_r(&tt, &t);
         char buf[256];
         sprintf(buf, "%04d-%02d-%02dT%02d:%02d:%02dZ", t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
-        os << buf;
+        (*os) << buf;
         break;
     }
     case ARRAY_TYPE:
-        os << '[';
+        (*os) << '[';
         for (const auto& v : *array_) {
             v.write(os, keyPrefix);
-            os << ", ";
+            (*os) << ", ";
         }
-        os << ']';
+        (*os) << ']';
         break;
     case TABLE_TYPE:
         for (const auto& kv : *table_) {
@@ -423,9 +425,9 @@ inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
-            os << kv.first << " = ";
+            (*os) << kv.first << " = ";
             kv.second.write(os, keyPrefix);
-            os << '\n';
+            (*os) << '\n';
         }
         for (const auto& kv : *table_) {
             if (kv.second.is<Table>()) {
@@ -433,7 +435,7 @@ inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
                 if (!keyPrefix.empty())
                     key += ".";
                 key += kv.first;
-                os << "\n[" << key << "]\n";
+                (*os) << "\n[" << key << "]\n";
                 kv.second.write(os, key);
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
@@ -442,7 +444,7 @@ inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
                     key += ".";
                 key += kv.first;
                 for (const auto& v : kv.second.as<Array>()) {
-                    os << "\n[[" << key << "]]\n";
+                    (*os) << "\n[[" << key << "]]\n";
                     v.write(os, key);
                 }
             }
@@ -457,7 +459,7 @@ inline void Value::write(std::ostream& os, const std::string& keyPrefix) const
 // static
 inline std::ostream& operator<<(std::ostream& os, const toml::Value& v)
 {
-    v.write(os);
+    v.write(&os);
     return os;
 }
 

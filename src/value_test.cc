@@ -95,6 +95,30 @@ TEST(ValueTest, double)
     EXPECT_EQ(100.0, v.as<double>());
 }
 
+TEST(ValueTest, doubleWrite)
+{
+    {
+        const toml::Value v(1.0);
+        ostringstream ss;
+        v.write(&ss);
+        EXPECT_EQ("1.000000", ss.str());
+    }
+
+    {
+        const toml::Value v(10000000.0);
+        ostringstream ss;
+        v.write(&ss);;
+        EXPECT_EQ("10000000.000000", ss.str());
+    }
+
+    {
+        const toml::Value v(123456.789123);
+        ostringstream ss;
+        v.write(&ss);
+        EXPECT_EQ("123456.789123", ss.str());
+    }
+}
+
 TEST(ValueTest, string)
 {
     toml::Value v1(string("foo"));
