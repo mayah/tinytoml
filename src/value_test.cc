@@ -156,6 +156,30 @@ TEST(ValueTest, array)
     EXPECT_EQ(1, v.get<int>(1));
 }
 
+TEST(ValueTest, arrayWrite)
+{
+    toml::Value v((toml::Array()));
+    {
+        ostringstream ss;
+        v.write(&ss);
+        EXPECT_EQ("[]", ss.str());
+    }
+
+    v.push(1);
+    {
+        ostringstream ss;
+        v.write(&ss);
+        EXPECT_EQ("[1]", ss.str());
+    }
+
+    v.push(2);
+    {
+        ostringstream ss;
+        v.write(&ss);
+        EXPECT_EQ("[1, 2]", ss.str());
+    }
+}
+
 TEST(ValueTest, table)
 {
     toml::Value v;

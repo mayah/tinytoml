@@ -413,9 +413,10 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
     }
     case ARRAY_TYPE:
         (*os) << '[';
-        for (const auto& v : *array_) {
-            v.write(os, keyPrefix);
-            (*os) << ", ";
+        for (size_t i = 0; i < array_->size(); ++i) {
+            if (i)
+                (*os) << ", ";
+            (*array_)[i].write(os, keyPrefix);
         }
         (*os) << ']';
         break;
