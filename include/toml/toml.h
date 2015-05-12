@@ -152,6 +152,8 @@ public:
     const Value* find(const std::string& key) const;
     Value* find(const std::string& key);
     bool has(const std::string& key) const { return find(key) != nullptr; }
+    // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
+    bool merge(const Value&);
 
     // For array value
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
@@ -164,6 +166,10 @@ public:
 
 private:
     static const char* typeToString(Type);
+
+    // key should not contain '.'
+    Value* unsafeSet(const std::string& key, const Value& v);
+    Value* ensureValue(const std::string& key);
 
     Value* findInternal(const std::string& key);
     const Value* findInternal(const std::string& key) const;
@@ -500,7 +506,39 @@ inline Value* Value::find(const std::string& key)
     return const_cast<Value*>(const_cast<const Value*>(this)->find(key));
 }
 
+inline bool Value::merge(const toml::Value& v)
+{
+    if (this == &v)
+        return true;
+
+    if (!is<Table>() || !v.is<Table>())
+        return false;
+
+    for (const auto& kv : *v.table_) {
+        if (Value* tmp = find(kv.first)) {
+            // If both are table, we merge them.
+            if (tmp->is<Table>() && kv.second.is<Table>()) {
+                if (!tmp->merge(kv.second))
+                    return false;
+            } else {
+                unsafeSet(kv.first, kv.second);
+            }
+        } else {
+            unsafeSet(kv.first, kv.second);
+        }
+    }
+
+    return true;
+}
+
 inline Value* Value::set(const std::string& key, const Value& v)
+{
+    Value* result = ensureValue(key);
+    *result = v;
+    return result;
+}
+
+inline Value* Value::unsafeSet(const std::string& key, const Value& v)
 {
     if (!valid())
         *this = Value((Table()));
@@ -556,6 +594,38 @@ inline void Value::push(const Value& v)
     array_->push_back(v);
 }
 
+inline Value* Value::ensureValue(const std::string& key)
+{
+    if (!valid())
+        *this = Value((Table()));
+
+    if (!is<Table>())
+        failwith("encountered non table value");
+
+    auto parts = split(key, '.');
+    auto lastKey = parts.back();
+    parts.pop_back();
+
+    Value* current = this;
+    for (const auto& part : parts) {
+        if (part.empty())
+            failwith("key contains empty string?");
+
+        if (Value* candidate = current->findInternal(part)) {
+            if (!candidate->is<Table>())
+                failwith("encountered non table value");
+            current = candidate;
+            continue;
+        }
+
+        current = current->unsafeSet(part, Table());
+    }
+
+    if (Value* v = current->findInternal(lastKey))
+        return v;
+    return current->unsafeSet(lastKey, Value());
+}
+
 inline Value* Value::findInternal(const std::string& key)
 {
     assert(is<Table>());
@@ -596,7 +666,7 @@ inline Value* Value::ensureTable(const std::string& key)
             continue;
         }
 
-        current = current->set(part, Table());
+        current = current->unsafeSet(part, Table());
     }
 
     return current;
@@ -623,12 +693,12 @@ inline Value* Value::ensureArrayTable(const std::string& key)
             continue;
         }
 
-        current = current->set(part, Table());
+        current = current->unsafeSet(part, Table());
     }
 
     Value* candidate = current->findInternal(lastKey);
     if (!candidate) {
-        candidate = current->set(lastKey, Array());
+        candidate = current->unsafeSet(lastKey, Array());
     }
 
     if (!candidate->is<Array>())

@@ -192,6 +192,14 @@ TEST(ValueTest, table)
     EXPECT_EQ(2, v.get<int>("key2"));
 }
 
+TEST(ValueTest, table2)
+{
+    toml::Value v;
+
+    v.set("key1.key2", 1);
+    EXPECT_EQ(1, v.find("key1")->find("key2")->as<int>());
+}
+
 TEST(ValueTest, number)
 {
     toml::Value v(1);
@@ -224,6 +232,27 @@ TEST(ValueTest, tableHas)
     v.set("foo", 1);
     EXPECT_TRUE(v.has("foo"));
     EXPECT_FALSE(v.has("bar"));
+}
+
+TEST(ValueTest, merge)
+{
+    toml::Value v1;
+    toml::Value v2;
+
+    v1.set("foo.foo", 1);
+    v1.set("foo.bar", 2);
+    v1.set("bar", 3);
+
+    v2.set("foo.bar", 4);
+    v2.set("foo.baz", 5);
+    v2.set("bar", 6);
+
+    EXPECT_TRUE(v1.merge(v2));
+
+    EXPECT_EQ(6, v1.get<int>("bar"));
+    EXPECT_EQ(1, v1.get<int>("foo.foo"));
+    EXPECT_EQ(4, v1.get<int>("foo.bar"));
+    EXPECT_EQ(5, v1.get<int>("foo.baz"));
 }
 
 TEST(ValueTest, arrayFind)
