@@ -510,7 +510,6 @@ inline bool Value::merge(const toml::Value& v)
 {
     if (this == &v)
         return true;
-
     if (!is<Table>() || !v.is<Table>())
         return false;
 
@@ -650,6 +649,9 @@ inline const Value* Value::findInternal(const std::string& key) const
 
 inline Value* Value::ensureTable(const std::string& key)
 {
+    if (!valid())
+        *this = Table();
+
     if (!is<Table>())
         return nullptr;
 

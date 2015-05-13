@@ -266,3 +266,12 @@ TEST(ValueTest, arrayFind)
 
     EXPECT_EQ(2, v.find(0)->as<int>());
 }
+
+TEST(ValueTest, ensureTable)
+{
+    toml::Value v;
+    toml::Value* foobar = v.ensureTable("foo.bar");
+    foobar->set("baz", 1);
+
+    EXPECT_EQ(1, v.get<int>("foo.bar.baz"));
+}
