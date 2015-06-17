@@ -5,6 +5,7 @@
 #include <chrono>
 #include <cstdarg>
 #include <cstdint>
+#include <cstdio>
 #include <ctime>
 #include <iomanip>
 #include <istream>
