@@ -20,7 +20,7 @@
 namespace toml
 {
 
-[[ noreturn ]]
+[[noreturn]]
 inline void failwith(const char* reason, ...)
 {
     char buf[1024];

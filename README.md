@@ -41,10 +41,6 @@ if (!v.valid()) {
     return;
 }
 
-// You can get a value using get().
-// If type error occured, std::runtime_error is raised.
-cout << v.get<string>("foo.bar") << endl;
-
 // You can find a value by find().
 // If found, non-null pointer will be returned.
 // You can check the type of value with is().
@@ -58,7 +54,7 @@ if (x && x->is<std::string>()) {
 
 // Note: the inner value of integer value is actually int64_t,
 // however, you can use 'int' for convenience.
-const toml::Value z = ...;
+toml::Value* z = ...;
 int x = z->as<int>();
 int y = z->as<int64_t>();
 // toml::Array is actually std::vector<toml::Value>.
@@ -67,6 +63,11 @@ const toml::Array& ar = z->as<toml::Array>();
 for (const toml::Value& v : ar) {
     ...
 }
+
+// For convenience way, you can use get() when you're sure that the value exists.
+// If type error occurred, std::runtime_error is raised.
+cout << v.get<string>("foo.bar") << endl;
+
 ```
 
 ## How to test
