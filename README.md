@@ -2,6 +2,8 @@
 
 A header only C++11 library for parsing TOML.
 
+[![Build Status](https://travis-ci.org/mayah/tinytoml.svg?branch=master)](https://travis-ci.org/mayah/tinytoml)
+
 This parser is based on TOML [v0.2.0](https://github.com/mojombo/toml/blob/master/versions/toml-v0.2.0.md).
 This library is distributed under simplified BSD License.
 
