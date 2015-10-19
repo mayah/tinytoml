@@ -750,6 +750,7 @@ private:
     bool parseKey(std::string*);
     bool parseValue(Value*);
     bool parseString(Value*);
+    bool parseStringSingleQuote(Value*);
     bool parseBool(Value*);
     bool parseNumber(Value*);
     bool parseArray(Value*);
@@ -1066,6 +1067,8 @@ inline bool Parser::parseValue(Value* v)
     switch (c) {
     case '"':
         return parseString(v);
+    case '\'':
+        return parseStringSingleQuote(v);
     case '[':
         return parseArray(v);
     case 't':
@@ -1130,6 +1133,30 @@ inline bool Parser::parseString(Value* v)
         s += c;
     }
 
+    addError("string didn't end with '\"'?");
+    return false;
+}
+
+inline bool Parser::parseStringSingleQuote(Value* v)
+{
+    if (!expect('\'')) {
+        addError("string didn't start with '\''?");
+        return false;
+    }
+
+    std::string s;
+    char c;
+    while (cur(&c)) {
+        next();
+        if (c == '\'') {
+            *v = s;
+            return true;
+        }
+
+        s += c;
+    }
+
+    addError("string didn't end with '\''?");
     return false;
 }
 

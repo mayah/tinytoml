@@ -10,6 +10,17 @@ static toml::Value parse(const std::string& s)
 {
     stringstream ss(s);
     toml::Parser p(ss);
+
+    toml::Value v = p.parse();
+    EXPECT_TRUE(v.valid()) << p.errorReason();
+    return v;
+}
+
+static toml::Value tryParse(const std::string& s)
+{
+    stringstream ss(s);
+    toml::Parser p(ss);
+
     return p.parse();
 }
 
@@ -106,6 +117,14 @@ TEST(ParserTest, parseString)
     EXPECT_EQ("hoge \"fuga\" hoge", v.get<string>("y"));
 }
 
+TEST(ParserTest, parseStringSinleQuote)
+{
+    toml::Value v = parse(
+        "x = 'foo bar \"foo bar\"'\n");
+
+    EXPECT_EQ("foo bar \"foo bar\"", v.get<string>("x"));
+}
+
 TEST(ParserTest, parseArray)
 {
     toml::Value v = parse(
@@ -148,7 +167,7 @@ TEST(ParserTest, parseTable)
 
 TEST(ParserTest, parseTableShouldFail)
 {
-    toml::Value v = parse(
+    toml::Value v = tryParse(
         "[foo]\n"
         "bar = 1\n"
         "bar = 2\n");
