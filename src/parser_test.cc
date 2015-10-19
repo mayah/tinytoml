@@ -146,6 +146,16 @@ TEST(ParserTest, parseTable)
     EXPECT_EQ(3, v.get<int>("piyo.piyo.piyo.puyo"));
 }
 
+TEST(ParserTest, parseTableShouldFail)
+{
+    toml::Value v = parse(
+        "[foo]\n"
+        "bar = 1\n"
+        "bar = 2\n");
+
+    EXPECT_FALSE(v.valid()) << "v should be invalid because there are multiple same keys.";
+}
+
 TEST(ParserTest, parseArrayTable)
 {
     toml::Value v = parse(

@@ -1035,6 +1035,11 @@ inline bool Parser::parseKeyValue(Value* current)
     if (!skipTrailing())
         return false;
 
+    if (current->has(key)) {
+        addError("Multiple same key: " + key);
+        return false;
+    }
+
     current->set(key, std::move(v));
     return true;
 }
