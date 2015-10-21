@@ -115,7 +115,7 @@ TEST(ParserTest, parseTime)
     EXPECT_EQ(tt, std::chrono::system_clock::to_time_t(v.get<toml::Time>("x")));
 }
 
-TEST(ParserTest, parseString)
+TEST(ParserTest, parseStringDoubleQuote)
 {
     toml::Value v = parse(
         "x = \"hoge\"\n"
@@ -125,15 +125,7 @@ TEST(ParserTest, parseString)
     EXPECT_EQ("hoge \"fuga\" hoge", v.get<string>("y"));
 }
 
-TEST(ParserTest, parseStringSinleQuote)
-{
-    toml::Value v = parse(
-        "x = 'foo bar \"foo bar\"'\n");
-
-    EXPECT_EQ("foo bar \"foo bar\"", v.get<string>("x"));
-}
-
-TEST(ParserTest, parseStringMultiLine1)
+TEST(ParserTest, parseStringDoubleQuoteMultiLine1)
 {
     toml::Value v = parse(R"(
 x = """
@@ -147,17 +139,42 @@ foo bar \
     EXPECT_EQ("foo bar foo bar", v.get<string>("y"));
 }
 
-TEST(ParserTest, parseStringMultiLine2)
+TEST(ParserTest, parseStringDoubleQuoteMultiLine2)
 {
     toml::Value v = parse(R"(x = """foo bar""")");
 
     EXPECT_EQ("foo bar", v.get<string>("x"));
 }
 
-TEST(ParserTest, parseStringMultiLine_FAIL_1)
+TEST(ParserTest, parseStringDoubleQuoteMultiLine_FAIL_1)
 {
     parseFail(R"(x = """foo bar")");
     parseFail(R"(x = """foo bar"")");
+}
+
+TEST(ParserTest, parseStringSinleQuote)
+{
+    toml::Value v = parse(
+        "x = 'foo bar \"foo bar\"'\n");
+
+    EXPECT_EQ("foo bar \"foo bar\"", v.get<string>("x"));
+}
+
+TEST(ParserTest, parseStringSinleQuoteMultiLine)
+{
+    toml::Value v = parse(R"(
+x = '''foo bar "foo bar"'''
+y = '''
+foo bar
+foo bar'''
+z = '''
+foo bar \
+   foo bar'''
+)");
+
+    EXPECT_EQ("foo bar \"foo bar\"", v.get<string>("x"));
+    EXPECT_EQ("foo bar\nfoo bar", v.get<string>("y"));
+    EXPECT_EQ("foo bar \\\n   foo bar", v.get<string>("z"));
 }
 
 TEST(ParserTest, parseArray)

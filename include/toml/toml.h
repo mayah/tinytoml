@@ -1203,6 +1203,49 @@ inline bool Parser::parseStringSingleQuote(Value* v)
 
     std::string s;
     char c;
+
+    if (cur(&c) && c == '\'') {
+        next();
+        if (!cur(&c) || c != '\'') {
+            // OK. It's empty string.
+            *v = "";
+            return true;
+        }
+        next();
+        // raw string literal started.
+        // Newline just after """ should be ignored.
+        if (cur(&c) && c == '\n')
+            next();
+
+        while (cur(&c)) {
+            if (c == '\'') {
+                next();
+                if (cur(&c) && c == '\'') {
+                    next();
+                    if (cur(&c) && c == '\'') {
+                        next();
+                        *v = s;
+                        return true;
+                    } else {
+                        s += '\'';
+                        s += '\'';
+                        continue;
+                    }
+                } else {
+                    s += '\'';
+                    continue;
+                }
+            }
+
+            next();
+            s += c;
+            continue;
+        }
+
+        addError("string didn't end with '\'\'\'' ?");
+        return false;
+    }
+
     while (cur(&c)) {
         next();
         if (c == '\'') {
