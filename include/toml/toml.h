@@ -749,7 +749,7 @@ private:
     bool parseKeyValue(Value*);
     bool parseKey(std::string*);
     bool parseValue(Value*);
-    bool parseString(Value*);
+    bool parseStringDoubleQuote(Value*);
     bool parseStringSingleQuote(Value*);
     bool parseBool(Value*);
     bool parseNumber(Value*);
@@ -1066,7 +1066,7 @@ inline bool Parser::parseValue(Value* v)
 
     switch (c) {
     case '"':
-        return parseString(v);
+        return parseStringDoubleQuote(v);
     case '\'':
         return parseStringSingleQuote(v);
     case '[':
@@ -1101,7 +1101,7 @@ inline bool Parser::parseBool(Value* v)
     return false;
 }
 
-inline bool Parser::parseString(Value* v)
+inline bool Parser::parseStringDoubleQuote(Value* v)
 {
     if (!expect('"')) {
         addError("string didn't start with '\"'?");
@@ -1110,6 +1110,63 @@ inline bool Parser::parseString(Value* v)
 
     std::string s;
     char c;
+
+    if (cur(&c) && c == '"') {
+        next();
+        if (!cur(&c) || c != '"') {
+            // OK. It's empty string.
+            *v = "";
+            return true;
+        }
+        next();
+        // raw string literal started.
+        // Newline just after """ should be ignored.
+        if (cur(&c) && c == '\n')
+            next();
+
+        while (cur(&c)) {
+            if (c == '"') {
+                next();
+                if (cur(&c) && c == '"') {
+                    next();
+                    if (cur(&c) && c == '"') {
+                        next();
+                        *v = s;
+                        return true;
+                    } else {
+                        s += '"';
+                        s += '"';
+                        continue;
+                    }
+                } else {
+                    s += '"';
+                    continue;
+                }
+            }
+
+            if (c == '\\') {
+                next();
+                if (cur(&c) && c == '\n') {
+                    next();
+                    while (cur(&c) && (c == ' ' || c == '\t' || c == '\r' || c == '\n')) {
+                        next();
+                    }
+                    continue;
+                } else {
+                    s += c;
+                    continue;
+                }
+            }
+
+            next();
+            s += c;
+            continue;
+        }
+
+        addError("string didn't end with '\"\"\"' ?");
+        return false;
+    }
+
     while (cur(&c)) {
         next();
         if (c == '\\') {
