@@ -46,6 +46,17 @@ inline std::vector<std::string> split(const std::string& s, char separator)
     return result;
 }
 
+inline std::string removeDelimiter(const std::string& s)
+{
+    std::string r;
+    for (char c : s) {
+        if (c == '_')
+            continue;
+        r += c;
+    }
+    return r;
+}
+
 // static
 inline std::string escapeString(const std::string& s)
 {
@@ -776,15 +787,20 @@ inline bool Parser::isInteger(const std::string& s)
     if (s.empty())
         return false;
 
-    for (std::string::size_type i = 0; i < s.size(); ++i) {
-        if ('0' <= s[i] && s[i] <= '9')
-            continue;
-        if (i == 0 && (s[i] == '-' || s[i] == '+'))
-            continue;
-        return false;
+    std::string::size_type p = 0;
+    if (s[p] == '+' || s[p] == '-')
+        ++p;
+
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
+        }
     }
 
-    return true;
+    return p == s.size();
 }
 
 // static
@@ -793,20 +809,59 @@ inline bool Parser::isDouble(const std::string& s)
     if (s.empty())
         return false;
 
-    bool foundComma = false;
-    for (std::string::size_type i = 0; i < s.size(); ++i) {
-        if ('0' <= s[i] && s[i] <= '9')
-            continue;
-        if (i + 1 != s.size() && s[i] == '.' && !foundComma) {
-            foundComma = true;
-            continue;
+    std::string::size_type p = 0;
+    if (s[p] == '+' || s[p] == '-')
+        ++p;
+
+    bool ok = false;
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        ok = true;
+
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
         }
-        if (i == 0 && (s[i] == '-' || s[i] == '+'))
-            continue;
-        return false;
     }
 
-    return true;
+    if (p < s.size() && s[p] == '.')
+        ++p;
+
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        ok = true;
+
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
+        }
+    }
+
+    if (!ok)
+        return false;
+
+    ok = false;
+    if (p < s.size() && (s[p] == 'e' || s[p] == 'E')) {
+        ++p;
+        if (p < s.size() && (s[p] == '+' || s[p] == '-'))
+            ++p;
+        while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+            ++p;
+            ok = true;
+
+            if (p < s.size() && s[p] == '_') {
+                ++p;
+                if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                    return false;
+            }
+        }
+        if (!ok)
+            return false;
+    }
+
+    return p == s.size();
 }
 
 // static
@@ -1270,7 +1325,7 @@ inline bool Parser::parseNumber(Value* v)
     }
 
     if (isInteger(s)) {
-        std::stringstream ss(s);
+        std::stringstream ss(removeDelimiter(s));
         int64_t x;
         ss >> x;
         *v = x;
@@ -1278,7 +1333,7 @@ inline bool Parser::parseNumber(Value* v)
     }
 
     if (isDouble(s)) {
-        std::stringstream ss(s);
+        std::stringstream ss(removeDelimiter(s));
         double d;
         ss >> d;
         *v = d;

@@ -85,6 +85,18 @@ TEST(ParserTest, parseInt)
     EXPECT_EQ(-1, v.get<int>("z"));
 }
 
+TEST(ParserTest, parseIntWithDelimiter)
+{
+    toml::Value v = parse(
+        "x =  100_000\n"
+        "y = +100_000\n"
+        "z = -100_000\n");
+
+    EXPECT_EQ(100000, v.get<int>("x"));
+    EXPECT_EQ(100000, v.get<int>("y"));
+    EXPECT_EQ(-100000, v.get<int>("z"));
+}
+
 TEST(ParserTest, parseDouble)
 {
     toml::Value v = parse(
@@ -95,6 +107,18 @@ TEST(ParserTest, parseDouble)
     EXPECT_EQ(1.0, v.get<double>("x"));
     EXPECT_EQ(-1.0, v.get<double>("y"));
     EXPECT_EQ(-0.5, v.get<double>("z"));
+}
+
+TEST(ParserTest, parseDoubleWithDelimiter)
+{
+    toml::Value v = parse(
+        "x =  100_000.000_1\n"
+        "y = +100_000.000_1\n"
+        "z = -100_000.000_1\n");
+
+    EXPECT_EQ( 100000.0001, v.get<double>("x"));
+    EXPECT_EQ( 100000.0001, v.get<double>("y"));
+    EXPECT_EQ(-100000.0001, v.get<double>("z"));
 }
 
 TEST(ParserTest, parseTime)
