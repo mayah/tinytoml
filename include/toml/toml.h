@@ -765,6 +765,7 @@ private:
     bool parseBool(Value*);
     bool parseNumber(Value*);
     bool parseArray(Value*);
+    bool parseInlineTable(Value*);
 
     void addError(const std::string& reason);
 
@@ -1126,6 +1127,8 @@ inline bool Parser::parseValue(Value* v)
         return parseStringSingleQuote(v);
     case '[':
         return parseArray(v);
+    case '{':
+        return parseInlineTable(v);
     case 't':
     case 'f':
         return parseBool(v);
@@ -1382,6 +1385,56 @@ inline bool Parser::parseArray(Value* v)
 
     expect(']');
     *v = std::move(a);
+    return true;
+}
+
+inline bool Parser::parseInlineTable(Value* value)
+{
+    if (!expect('{')) {
+        addError("inline table didn't start with '{'?");
+        return false;
+    }
+
+    Value t((Table()));
+    bool first = true;
+    while (true) {
+        skipUntilNextToken();
+
+        char c;
+        if (cur(&c) && c == '}') {
+            break;
+        }
+
+        if (!first) {
+            if (!expect(',')) {
+                addError("inline table didn't have ',' for delimiter?");
+                return false;
+            }
+            skipUntilNextToken();
+        }
+        first = false;
+
+        std::string key;
+        if (!parseKey(&key))
+            return false;
+        skipWhiteSpaces();
+        if (!expect('='))
+            return false;
+        skipWhiteSpaces();
+        Value v;
+        if (!parseValue(&v))
+            return false;
+
+        if (t.has(key)) {
+            addError("inline table has multiple same keys: key=" + key);
+            return false;
+        }
+
+        t.set(key, v);
+    }
+
+    expect('}');
+    *value = std::move(t);
     return true;
 }
 

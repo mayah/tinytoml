@@ -223,6 +223,17 @@ TEST(ParserTest, parseArray)
     EXPECT_EQ("", z.get<string>(1));
 }
 
+TEST(ParserTest, parseInlineTable)
+{
+    toml::Value v = parse(R"(
+x = {}
+y = { a = 1, b = 2 })");
+
+    EXPECT_TRUE(v.find("x") != nullptr);
+    EXPECT_EQ(1, v.get<int>("y.a"));
+    EXPECT_EQ(2, v.get<int>("y.b"));
+}
+
 TEST(ParserTest, parseTable)
 {
     toml::Value v = parse(
