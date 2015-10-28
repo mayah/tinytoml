@@ -16,22 +16,6 @@ static toml::Value parse(const std::string& s)
     return v;
 }
 
-static void parseFail(const std::string& s)
-{
-    stringstream ss(s);
-    toml::Parser p(ss);
-    toml::Value v = p.parse();
-    EXPECT_FALSE(v.valid());
-}
-
-static toml::Value tryParse(const std::string& s)
-{
-    stringstream ss(s);
-    toml::Parser p(ss);
-
-    return p.parse();
-}
-
 TEST(ParserTest, parseEmpty)
 {
     toml::Value v = parse("");
@@ -170,12 +154,6 @@ TEST(ParserTest, parseStringDoubleQuoteMultiLine2)
     EXPECT_EQ("foo bar", v.get<string>("x"));
 }
 
-TEST(ParserTest, parseStringDoubleQuoteMultiLine_FAIL_1)
-{
-    parseFail(R"(x = """foo bar")");
-    parseFail(R"(x = """foo bar"")");
-}
-
 TEST(ParserTest, parseStringSinleQuote)
 {
     toml::Value v = parse(
@@ -250,16 +228,6 @@ TEST(ParserTest, parseTable)
 
     EXPECT_EQ(2, v.get<int>("piyo.piyo.puyo"));
     EXPECT_EQ(3, v.get<int>("piyo.piyo.piyo.puyo"));
-}
-
-TEST(ParserTest, parseTableShouldFail)
-{
-    toml::Value v = tryParse(
-        "[foo]\n"
-        "bar = 1\n"
-        "bar = 2\n");
-
-    EXPECT_FALSE(v.valid()) << "v should be invalid because there are multiple same keys.";
 }
 
 TEST(ParserTest, parseArrayTable)

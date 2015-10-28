@@ -57,6 +57,87 @@ inline std::string removeDelimiter(const std::string& s)
     return r;
 }
 
+inline bool isInteger(const std::string& s)
+{
+    if (s.empty())
+        return false;
+
+    std::string::size_type p = 0;
+    if (s[p] == '+' || s[p] == '-')
+        ++p;
+
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
+        }
+    }
+
+    return p == s.size();
+}
+
+inline bool isDouble(const std::string& s)
+{
+    if (s.empty())
+        return false;
+
+    std::string::size_type p = 0;
+    if (s[p] == '+' || s[p] == '-')
+        ++p;
+
+    bool ok = false;
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        ok = true;
+
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
+        }
+    }
+
+    if (p < s.size() && s[p] == '.')
+        ++p;
+
+    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+        ++p;
+        ok = true;
+
+        if (p < s.size() && s[p] == '_') {
+            ++p;
+            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                return false;
+        }
+    }
+
+    if (!ok)
+        return false;
+
+    ok = false;
+    if (p < s.size() && (s[p] == 'e' || s[p] == 'E')) {
+        ++p;
+        if (p < s.size() && (s[p] == '+' || s[p] == '-'))
+            ++p;
+        while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
+            ++p;
+            ok = true;
+
+            if (p < s.size() && s[p] == '_') {
+                ++p;
+                if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
+                    return false;
+            }
+        }
+        if (!ok)
+            return false;
+    }
+
+    return p == s.size();
+}
+
 // static
 inline std::string escapeString(const std::string& s)
 {
@@ -75,6 +156,376 @@ inline std::string escapeString(const std::string& s)
 
     return ss.str();
 }
+
+// ----------------------------------------------------------------------
+
+enum class TokenType {
+    ERROR,
+    END_OF_FILE,
+    END_OF_LINE,
+    IDENT,
+    STRING,
+    INT,
+    DOUBLE,
+    TIME,
+    COMMA,
+    DOT,
+    EQUAL,
+    LBRACKET,
+    RBRACKET,
+    LBRACE,
+    RBRACE,
+};
+
+class Token {
+public:
+    explicit Token(TokenType type) : type_(type) {}
+    Token(TokenType type, const std::string& v) : type_(type), strValue_(v) {}
+    Token(TokenType type, std::int64_t v) : type_(type), intValue_(v) {}
+    Token(TokenType type, double v) : type_(type), doubleValue_(v) {}
+    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), timeValue_(tp) {}
+
+    TokenType type() const { return type_; }
+    const std::string& strValue() const { return strValue_; }
+    std::int64_t intValue() const { return intValue_; }
+    double doubleValue() const { return doubleValue_; }
+    std::chrono::system_clock::time_point timeValue() const { return timeValue_; }
+
+private:
+    TokenType type_;
+    std::string strValue_;
+    std::int64_t intValue_;
+    double doubleValue_;
+    std::chrono::system_clock::time_point timeValue_;
+};
+
+class Lexer {
+public:
+    explicit Lexer(std::istream& is) : is_(is), lineNo_(1) {}
+    Token nextToken();
+
+    int lineNo() const { return lineNo_; }
+
+private:
+    bool current(char* c);
+    void next();
+    bool consume(char c);
+
+    void skipUntilNewLine();
+
+    Token nextStringDoubleQuote();
+    Token nextStringSingleQuote();
+    Token nextIdent();
+    Token nextNumber();
+    Token parseAsTime(const std::string&);
+
+    std::istream& is_;
+    int lineNo_;
+};
+
+inline bool Lexer::current(char* c)
+{
+    int x = is_.peek();
+    if (x == EOF)
+        return false;
+    *c = static_cast<char>(x);
+    return true;
+}
+
+inline void Lexer::next()
+{
+    int x = is_.get();
+    if (x == '\n')
+        ++lineNo_;
+}
+
+inline bool Lexer::consume(char c)
+{
+    char x;
+    if (!current(&x))
+        return false;
+    if (x != c)
+        return false;
+    next();
+    return true;
+}
+
+inline void Lexer::skipUntilNewLine()
+{
+    char c;
+    while (current(&c)) {
+        if (c == '\n')
+            return;
+        next();
+    }
+}
+
+inline Token Lexer::nextStringDoubleQuote()
+{
+    if (!consume('"'))
+        return Token(TokenType::ERROR, "string didn't start with '\"'");
+
+    std::string s;
+    char c;
+
+    if (current(&c) && c == '"') {
+        next();
+        if (!current(&c) || c != '"') {
+            // OK. It's empty string.
+            return Token(TokenType::STRING, "");
+        }
+
+        next();
+        // raw string literal started.
+        // Newline just after """ should be ignored.
+        if (current(&c) && c == '\n')
+            next();
+
+        while (current(&c)) {
+            if (c == '"') {
+                next();
+                if (current(&c) && c == '"') {
+                    next();
+                    if (current(&c) && c == '"') {
+                        next();
+                        return Token(TokenType::STRING, s);
+                    } else {
+                        s += '"';
+                        s += '"';
+                        continue;
+                    }
+                } else {
+                    s += '"';
+                    continue;
+                }
+            }
+
+            if (c == '\\') {
+                next();
+                if (current(&c) && c == '\n') {
+                    next();
+                    while (current(&c) && (c == ' ' || c == '\t' || c == '\r' || c == '\n')) {
+                        next();
+                    }
+                    continue;
+                } else {
+                    s += c;
+                    continue;
+                }
+            }
+
+            next();
+            s += c;
+            continue;
+        }
+
+        return Token(TokenType::ERROR, "string didn't end with '\"\"\"' ?");
+    }
+
+    while (current(&c)) {
+        next();
+        if (c == '\\') {
+            if (!current(&c))
+                return Token(TokenType::ERROR, "string has unknown escape sequence");
+            next();
+            switch (c) {
+            case 't': c = '\t'; break;
+            case 'n': c = '\n'; break;
+            case 'r': c = '\r'; break;
+            case '"': c = '"'; break;
+            case '\'': c = '\''; break;
+            case '\\': c = '\\'; break;
+            default:
+                return Token(TokenType::ERROR, "string has unknown escape sequence");
+            }
+        } else if (c == '"') {
+            return Token(TokenType::STRING, s);
+        }
+
+        s += c;
+    }
+
+    return Token(TokenType::ERROR, "string didn't end with '\"'?");
+}
+
+inline Token Lexer::nextStringSingleQuote()
+{
+    if (!consume('\''))
+        return Token(TokenType::ERROR, "string didn't start with '\''?");
+
+    std::string s;
+    char c;
+
+    if (current(&c) && c == '\'') {
+        next();
+        if (!current(&c) || c != '\'') {
+            // OK. It's empty string.
+            return Token(TokenType::STRING, "");
+        }
+        next();
+        // raw string literal started.
+        // Newline just after """ should be ignored.
+        if (current(&c) && c == '\n')
+            next();
+
+        while (current(&c)) {
+            if (c == '\'') {
+                next();
+                if (current(&c) && c == '\'') {
+                    next();
+                    if (current(&c) && c == '\'') {
+                        next();
+                        return Token(TokenType::STRING, s);
+                    } else {
+                        s += '\'';
+                        s += '\'';
+                        continue;
+                    }
+                } else {
+                    s += '\'';
+                    continue;
+                }
+            }
+
+            next();
+            s += c;
+            continue;
+        }
+
+        return Token(TokenType::ERROR, "string didn't end with '\'\'\'' ?");
+    }
+
+    while (current(&c)) {
+        next();
+        if (c == '\'') {
+            return Token(TokenType::STRING, s);
+        }
+
+        s += c;
+    }
+
+    return Token(TokenType::ERROR, "string didn't end with '\''?");
+}
+
+inline Token Lexer::nextIdent()
+{
+    std::string s;
+    char c;
+    while (current(&c) && (isalnum(c) || c == '_')) {
+        s += c;
+        next();
+    }
+
+    if (s.empty())
+        return Token(TokenType::ERROR, "ident doesn't start with alnum or _?");
+
+    return Token(TokenType::IDENT, s);
+}
+
+inline Token Lexer::nextNumber()
+{
+    std::string s;
+    char c;
+
+    while (current(&c) && (('0' <= c && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
+                           c == 'T' || c == 'Z' || c == '_' || c == ':' || c == '-' || c == '+')) {
+        next();
+        s += c;
+    }
+
+    if (isInteger(s)) {
+        std::stringstream ss(removeDelimiter(s));
+        std::int64_t x;
+        ss >> x;
+        return Token(TokenType::INT, x);
+    }
+
+    if (isDouble(s)) {
+        std::stringstream ss(removeDelimiter(s));
+        double d;
+        ss >> d;
+        return Token(TokenType::DOUBLE, d);
+    }
+
+    return parseAsTime(s);
+}
+
+inline Token Lexer::parseAsTime(const std::string& s)
+{
+    // Time has the following form: YYYY-MM-DDThh:mm:ssZ
+    // TODO(mayah): Follow RFC?
+
+    int YYYY, MM, DD, hh, mm, ss;
+    if (sscanf(s.c_str(), "%d-%d-%dT%d:%d:%d", &YYYY, &MM, &DD, &hh, &mm, &ss) != 6) {
+        return Token(TokenType::ERROR, "wrong time format?");
+    }
+
+    std::tm t;
+    t.tm_sec = ss;
+    t.tm_min = mm;
+    t.tm_hour = hh;
+    t.tm_mday = DD;
+    t.tm_mon = MM - 1;
+    t.tm_year = YYYY - 1900;
+
+    auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
+    return Token(TokenType::TIME, tp);
+}
+
+inline Token Lexer::nextToken()
+{
+    char c;
+    while (current(&c)) {
+        if (c == ' ' || c == '\t' || c == '\r') {
+            next();
+            continue;
+        }
+
+        if (c == '#') {
+            skipUntilNewLine();
+            continue;
+        }
+
+        switch (c) {
+        case '\n':
+            next();
+            return Token(TokenType::END_OF_LINE);
+        case '=':
+            next();
+            return Token(TokenType::EQUAL);
+        case '{':
+            next();
+            return Token(TokenType::LBRACE);
+        case '}':
+            next();
+            return Token(TokenType::RBRACE);
+        case '[':
+            next();
+            return Token(TokenType::LBRACKET);
+        case ']':
+            next();
+            return Token(TokenType::RBRACKET);
+        case ',':
+            next();
+            return Token(TokenType::COMMA);
+        case '.':
+            next();
+            return Token(TokenType::DOT);
+        case '\"':
+            return nextStringDoubleQuote();
+        case '\'':
+            return nextStringSingleQuote();
+        default:
+            if (isalpha(c) || c == '_')
+                return nextIdent();
+            return nextNumber();
+        }
+    }
+
+    return Token(TokenType::END_OF_FILE);
+}
+
+// ----------------------------------------------------------------------
 
 class Value;
 typedef std::chrono::system_clock::time_point Time;
@@ -140,7 +591,6 @@ public:
     // But this is wrong. Without this constructor,
     // value will be unexpectedly initialized with bool.
     Value(const void* v) = delete;
-
     ~Value();
 
     size_t size() const;
@@ -171,20 +621,17 @@ public:
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
     const Value* find(size_t index) const;
     Value* find(size_t index);
-    void push(const Value& v);
+    Value* push(const Value& v);
 
-    Value* ensureTable(const std::string& key);
-    Value* ensureArrayTable(const std::string& key);
+    // key should not contain '.'
+    Value* findSingle(const std::string& key);
+    const Value* findSingle(const std::string& key) const;
+    Value* setSingle(const std::string& key, const Value& v);
 
 private:
     static const char* typeToString(Type);
 
-    // key should not contain '.'
-    Value* unsafeSet(const std::string& key, const Value& v);
     Value* ensureValue(const std::string& key);
-
-    Value* findInternal(const std::string& key);
-    const Value* findInternal(const std::string& key) const;
 
     Type type_;
     union {
@@ -505,12 +952,12 @@ inline const Value* Value::find(const std::string& key) const
 
     const Value* current = this;
     for (const auto& part : parts) {
-        current = current->findInternal(part);
+        current = current->findSingle(part);
         if (!current || !current->is<Table>())
             return nullptr;
     }
 
-    return current->findInternal(lastKey);
+    return current->findSingle(lastKey);
 }
 
 inline Value* Value::find(const std::string& key)
@@ -532,10 +979,10 @@ inline bool Value::merge(const toml::Value& v)
                 if (!tmp->merge(kv.second))
                     return false;
             } else {
-                unsafeSet(kv.first, kv.second);
+                setSingle(kv.first, kv.second);
             }
         } else {
-            unsafeSet(kv.first, kv.second);
+            setSingle(kv.first, kv.second);
         }
     }
 
@@ -549,7 +996,7 @@ inline Value* Value::set(const std::string& key, const Value& v)
     return result;
 }
 
-inline Value* Value::unsafeSet(const std::string& key, const Value& v)
+inline Value* Value::setSingle(const std::string& key, const Value& v)
 {
     if (!valid())
         *this = Value((Table()));
@@ -595,7 +1042,7 @@ inline Value* Value::find(size_t index)
     return const_cast<Value*>(const_cast<const Value*>(this)->find(index));
 }
 
-inline void Value::push(const Value& v)
+inline Value* Value::push(const Value& v)
 {
     if (!valid())
         *this = Value((Array()));
@@ -603,6 +1050,7 @@ inline void Value::push(const Value& v)
         failwith("type must be array to do push(Value).");
 
     array_->push_back(v);
+    return &array_->back();
 }
 
 inline Value* Value::ensureValue(const std::string& key)
@@ -622,22 +1070,22 @@ inline Value* Value::ensureValue(const std::string& key)
         if (part.empty())
             failwith("key contains empty string?");
 
-        if (Value* candidate = current->findInternal(part)) {
+        if (Value* candidate = current->findSingle(part)) {
             if (!candidate->is<Table>())
                 failwith("encountered non table value");
             current = candidate;
             continue;
         }
 
-        current = current->unsafeSet(part, Table());
+        current = current->setSingle(part, Table());
     }
 
-    if (Value* v = current->findInternal(lastKey))
+    if (Value* v = current->findSingle(lastKey))
         return v;
-    return current->unsafeSet(lastKey, Value());
+    return current->setSingle(lastKey, Value());
 }
 
-inline Value* Value::findInternal(const std::string& key)
+inline Value* Value::findSingle(const std::string& key)
 {
     assert(is<Table>());
 
@@ -648,7 +1096,7 @@ inline Value* Value::findInternal(const std::string& key)
     return &it->second;
 }
 
-inline const Value* Value::findInternal(const std::string& key) const
+inline const Value* Value::findSingle(const std::string& key) const
 {
     assert(is<Table>());
 
@@ -657,80 +1105,13 @@ inline const Value* Value::findInternal(const std::string& key) const
         return nullptr;
 
     return &it->second;
-}
-
-inline Value* Value::ensureTable(const std::string& key)
-{
-    if (!valid())
-        *this = Table();
-
-    if (!is<Table>())
-        return nullptr;
-
-    auto parts = split(key, '.');
-    Value* current = this;
-    for (const auto& part : parts) {
-        if (part.empty())
-            return nullptr;
-
-        if (Value* candidate = current->findInternal(part)) {
-            if (!candidate->is<Table>())
-                return nullptr;
-            current = candidate;
-            continue;
-        }
-
-        current = current->unsafeSet(part, Table());
-    }
-
-    return current;
-}
-
-inline Value* Value::ensureArrayTable(const std::string& key)
-{
-    if (!is<Table>())
-        return nullptr;
-
-    auto parts = split(key, '.');
-    auto lastKey = parts.back();
-    parts.pop_back();
-
-    Value* current = this;
-    for (const auto& part : parts) {
-        if (part.empty())
-            return nullptr;
-
-        if (Value* candidate = current->findInternal(part)) {
-            if (!candidate->is<Table>())
-                return nullptr;
-            current = candidate;
-            continue;
-        }
-
-        current = current->unsafeSet(part, Table());
-    }
-
-    Value* candidate = current->findInternal(lastKey);
-    if (!candidate) {
-        candidate = current->unsafeSet(lastKey, Array());
-    }
-
-    if (!candidate->is<Array>())
-        return nullptr;
-
-    Array* internal = candidate->array_;
-    if (internal->size() >= 1 && !(*internal)[0].is<Table>()) {
-        return nullptr;
-    }
-    internal->push_back(Table());
-    return &internal->back();
 }
 
 // ----------------------------------------------------------------------
 
 class Parser {
 public:
-    Parser(std::istream& is) : is_(is) {}
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR) { next(); }
 
     // Parses. If failed(), value should be null value. You can get
     // the error by calling errorReason().
@@ -738,22 +1119,11 @@ public:
     const std::string& errorReason();
 
 private:
-    static bool isValidKeyChar(char c);
-    static bool isInteger(const std::string&);
-    static bool isDouble(const std::string&);
-    static bool parseTime(const std::string&, Value*);
-
-    void next();
-    bool cur(char* c);
-    bool expect(char c);
-    bool expectEOF();
-    bool expectEOL();
-
-    void skipWhiteSpaces();
-    void skipUntilNextLine();
-    void skipUntilNextToken();
-    // skip spaces and comments until next line.
-    bool skipTrailing();
+    const Token& token() const { return token_; }
+    void next() { token_ = lexer_.nextToken(); }
+    void skip();
+    bool consume(TokenType);
+    bool consumeEOLorEOF();
 
     Value* parseGroupKey(Value* root);
 
@@ -769,123 +1139,35 @@ private:
 
     void addError(const std::string& reason);
 
-    std::istream& is_;
-    int lineNo_ = 1;
+    Lexer lexer_;
+    Token token_;
     std::string errorReason_;
 };
 
-// static
-inline bool Parser::isValidKeyChar(char c)
+inline void Parser::skip()
 {
-    if (c == ' ' || c == '\r' || c == '\n' || c == ']' || c == '[')
-        return false;
-    return true;
+    while (token().type() == TokenType::END_OF_LINE)
+        next();
 }
 
-// static
-inline bool Parser::isInteger(const std::string& s)
+inline bool Parser::consume(TokenType type)
 {
-    if (s.empty())
-        return false;
-
-    std::string::size_type p = 0;
-    if (s[p] == '+' || s[p] == '-')
-        ++p;
-
-    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
-        ++p;
-        if (p < s.size() && s[p] == '_') {
-            ++p;
-            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
-                return false;
-        }
+    if (token().type() == type) {
+        next();
+        return true;
     }
 
-    return p == s.size();
+    return false;
 }
 
-// static
-inline bool Parser::isDouble(const std::string& s)
+inline bool Parser::consumeEOLorEOF()
 {
-    if (s.empty())
-        return false;
-
-    std::string::size_type p = 0;
-    if (s[p] == '+' || s[p] == '-')
-        ++p;
-
-    bool ok = false;
-    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
-        ++p;
-        ok = true;
-
-        if (p < s.size() && s[p] == '_') {
-            ++p;
-            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
-                return false;
-        }
+    if (token().type() == TokenType::END_OF_LINE || token().type() == TokenType::END_OF_FILE) {
+        next();
+        return true;
     }
 
-    if (p < s.size() && s[p] == '.')
-        ++p;
-
-    while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
-        ++p;
-        ok = true;
-
-        if (p < s.size() && s[p] == '_') {
-            ++p;
-            if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
-                return false;
-        }
-    }
-
-    if (!ok)
-        return false;
-
-    ok = false;
-    if (p < s.size() && (s[p] == 'e' || s[p] == 'E')) {
-        ++p;
-        if (p < s.size() && (s[p] == '+' || s[p] == '-'))
-            ++p;
-        while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
-            ++p;
-            ok = true;
-
-            if (p < s.size() && s[p] == '_') {
-                ++p;
-                if (!(p < s.size() && '0' <= s[p] && s[p] <= '9'))
-                    return false;
-            }
-        }
-        if (!ok)
-            return false;
-    }
-
-    return p == s.size();
-}
-
-// static
-inline bool Parser::parseTime(const std::string& s, Value* v)
-{
-    // Time has the following form: YYYY-MM-DDThh:mm:ssZ
-    // TODO(mayah): Follow RFC?
-
-    int YYYY, MM, DD, hh, mm, ss;
-    if (sscanf(s.c_str(), "%d-%d-%dT%d:%d:%d", &YYYY, &MM, &DD, &hh, &mm, &ss) != 6) {
-        return false;
-    }
-
-    std::tm t;
-    t.tm_sec = ss;
-    t.tm_min = mm;
-    t.tm_hour = hh;
-    t.tm_mday = DD;
-    t.tm_mon = MM - 1;
-    t.tm_year = YYYY - 1900;
-
-    *v = std::chrono::system_clock::from_time_t(timegm(&t));
-    return true;
+    return false;
 }
 
 inline void Parser::addError(const std::string& reason)
@@ -894,7 +1176,7 @@ inline void Parser::addError(const std::string& reason)
         return;
 
     std::stringstream ss;
-    ss << "Error: line " << lineNo_ << ": " << reason;
+    ss << "Error: line " << lexer_.lineNo() << ": " << reason;
     errorReason_ = ss.str();
 }
 
@@ -906,190 +1188,113 @@ inline const std::string& Parser::errorReason()
 inline Value Parser::parse()
 {
     Value root((Table()));
-    Value* current = &root;
+    Value* currentValue = &root;
 
-    char c;
-    while (skipUntilNextToken(), cur(&c)) {
-        if (c == '[') {
-            current = parseGroupKey(&root);
-            if (!current) {
+    while (true) {
+        skip();
+        if (token().type() == TokenType::END_OF_FILE)
+            break;
+        if (token().type() == TokenType::LBRACKET) {
+            currentValue = parseGroupKey(&root);
+            if (!currentValue) {
                 addError("error when parsing group key");
                 return Value();
             }
             continue;
         }
-        if (!parseKeyValue(current)) {
+
+        if (!parseKeyValue(currentValue)) {
             addError("error when parsing key Value");
             return Value();
         }
     }
-
     return root;
-}
-
-inline bool Parser::cur(char* c)
-{
-    int x = is_.peek();
-    if (x == EOF)
-        return false;
-    *c = static_cast<char>(x);
-    return true;
-}
-
-inline void Parser::next()
-{
-    int x = is_.get();
-    if (x == '\n')
-        ++lineNo_;
-}
-
-inline bool Parser::expect(char c)
-{
-    char c1;
-    if (cur(&c1) && c == c1) {
-        next();
-        return true;
-    }
-
-    return false;
-}
-
-inline bool Parser::expectEOF()
-{
-    char c;
-    return !cur(&c);
-}
-
-inline bool Parser::expectEOL()
-{
-    char c;
-    if (!cur(&c))
-        return false;
-
-    if (c == '\n') {
-        next();
-        return true;
-    }
-    if (c == '\r') {
-        next();
-        if (cur(&c) && c == '\n') {
-            next();
-            return true;
-        }
-    }
-
-    return false;
-}
-
-inline void Parser::skipWhiteSpaces()
-{
-    char c;
-    while (cur(&c)) {
-        if (!(c == ' ' || c == '\t'))
-            break;
-        next();
-    }
-}
-
-inline void Parser::skipUntilNextLine()
-{
-    char c;
-    while (cur(&c)) {
-        next();
-        if (c == '\n')
-            break;
-    }
-}
-
-inline void Parser::skipUntilNextToken()
-{
-    char c;
-    while (cur(&c)) {
-        if (c == ' ' || c == '\t' || c == '\r' || c == '\n') {
-            next();
-            continue;
-        }
-        if (c == '#') {
-            skipUntilNextLine();
-            continue;
-        }
-        break;
-    }
-}
-
-inline bool Parser::skipTrailing()
-{
-    skipWhiteSpaces();
-    char c;
-    if (cur(&c) && c == '#') {
-        skipUntilNextLine();
-        return true;
-    }
-
-    return expectEOF() || expectEOL();
 }
 
 inline Value* Parser::parseGroupKey(Value* root)
 {
-    if (!expect('[')) {
-        addError("group key is not started with '[' ?");
+    if (!consume(TokenType::LBRACKET))
+        return nullptr;
+
+    bool isArray = false;
+    if (token().type() == TokenType::LBRACKET) {
+        next();
+        isArray = true;
+    }
+
+    Value* currentValue = root;
+    while (true) {
+        if (token().type() != TokenType::IDENT && token().type() != TokenType::STRING)
+            return nullptr;
+
+        std::string key = token().strValue();
+        next();
+
+        if (token().type() == TokenType::DOT) {
+            next();
+            if (Value* candidate = currentValue->findSingle(key)) {
+                if (!candidate->is<Table>())
+                    return nullptr;
+                currentValue = candidate;
+            } else {
+                currentValue = currentValue->setSingle(key, Table());
+            }
+            continue;
+        }
+
+        if (token().type() == TokenType::RBRACKET) {
+            next();
+            if (Value* candidate = currentValue->findSingle(key)) {
+                if (isArray) {
+                    if (!candidate->is<Array>())
+                        return nullptr;
+                    currentValue = candidate->push(Table());
+                } else {
+                    if (!candidate->is<Table>())
+                        return nullptr;
+                    currentValue = candidate;
+                }
+            } else {
+                if (isArray) {
+                    currentValue = currentValue->setSingle(key, Array());
+                    currentValue = currentValue->push(Table());
+                } else {
+                    currentValue = currentValue->setSingle(key, Table());
+                }
+            }
+            break;
+        }
+
         return nullptr;
     }
 
-    char c;
-    if (cur(&c) && c == '[') {
-        next();
-        std::string key;
-        while (cur(&c) && c != '\n' && c != ']') {
-            next();
-            key += c;
-        }
-
-        if (!expect(']')) {
-            addError("array group key is not ended with ']]'");
+    if (isArray) {
+        if (!consume(TokenType::RBRACKET))
             return nullptr;
-        }
-        if (!expect(']')) {
-            addError("array group key is not ended with ']]'");
-            return nullptr;
-        }
-        if (!skipTrailing()) {
-            addError("some garbage after array group key?");
-            return nullptr;
-        }
-        return root->ensureArrayTable(key);
-    } else {
-        std::string key;
-        while (cur(&c) && c != '\n' && c != ']') {
-            next();
-            key += c;
-        }
-        if (!expect(']')) {
-            addError("group key is not ended with ']'");
-            return nullptr;
-        }
-        if (!skipTrailing()) {
-            addError("some garbage after array group key?");
-            return nullptr;
-        }
-        return root->ensureTable(key);
     }
+
+    if (!consumeEOLorEOF())
+        return nullptr;
+
+    return currentValue;
 }
 
 inline bool Parser::parseKeyValue(Value* current)
 {
     std::string key;
-    if (!parseKey(&key))
+    if (!parseKey(&key)) {
+        addError("parse key failed");
         return false;
-    skipWhiteSpaces();
-    if (!expect('='))
+    }
+    if (!consume(TokenType::EQUAL)) {
+        addError("no equal?");
         return false;
-    skipWhiteSpaces();
+    }
+
     Value v;
     if (!parseValue(&v))
         return false;
-
-    if (!skipTrailing())
+    if (!consumeEOLorEOF())
         return false;
 
     if (current->has(key)) {
@@ -1105,53 +1310,59 @@ inline bool Parser::parseKey(std::string* key)
 {
     key->clear();
 
-    char c;
-    while (cur(&c) && isValidKeyChar(c)) {
-        *key += c;
+    if (token().type() == TokenType::IDENT) {
+        *key = token().strValue();
         next();
-    }
-
-    return !key->empty();
-}
-
-inline bool Parser::parseValue(Value* v)
-{
-    char c;
-    if (!cur(&c))
-        return false;
-
-    switch (c) {
-    case '"':
-        return parseStringDoubleQuote(v);
-    case '\'':
-        return parseStringSingleQuote(v);
-    case '[':
-        return parseArray(v);
-    case '{':
-        return parseInlineTable(v);
-    case 't':
-    case 'f':
-        return parseBool(v);
-    default:
-        return parseNumber(v);
+        return true;
     }
 
     return false;
 }
 
+inline bool Parser::parseValue(Value* v)
+{
+    switch (token().type()) {
+    case TokenType::STRING:
+        *v = token().strValue();
+        next();
+        return true;
+    case TokenType::LBRACKET:
+        return parseArray(v);
+    case TokenType::LBRACE:
+        return parseInlineTable(v);
+    case TokenType::IDENT:
+        return parseBool(v);
+    case TokenType::INT:
+        *v = token().intValue();
+        next();
+        return true;
+    case TokenType::DOUBLE:
+        *v = token().doubleValue();
+        next();
+        return true;
+    case TokenType::TIME:
+        *v = token().timeValue();
+        next();
+        return true;
+    case TokenType::ERROR:
+        addError(token().strValue());
+        return false;
+    default:
+        addError("unexpected token");
+        return false;
+    }
+}
+
 inline bool Parser::parseBool(Value* v)
 {
-    std::string str;
-    char c;
-    while (cur(&c) && 'a' <= c && c <= 'z') {
+    if (token().strValue() == "true") {
         next();
-        str += c;
-    }
-    if (str == "true") {
         *v = true;
         return true;
     }
-    if (str == "false") {
+
+    if (token().strValue() == "false") {
+        next();
         *v = false;
         return true;
     }
@@ -1159,268 +1370,70 @@ inline bool Parser::parseBool(Value* v)
     return false;
 }
 
-inline bool Parser::parseStringDoubleQuote(Value* v)
-{
-    if (!expect('"')) {
-        addError("string didn't start with '\"'?");
-        return false;
-    }
-
-    std::string s;
-    char c;
-
-    if (cur(&c) && c == '"') {
-        next();
-        if (!cur(&c) || c != '"') {
-            // OK. It's empty string.
-            *v = "";
-            return true;
-        }
-        next();
-        // raw string literal started.
-        // Newline just after """ should be ignored.
-        if (cur(&c) && c == '\n')
-            next();
-
-        while (cur(&c)) {
-            if (c == '"') {
-                next();
-                if (cur(&c) && c == '"') {
-                    next();
-                    if (cur(&c) && c == '"') {
-                        next();
-                        *v = s;
-                        return true;
-                    } else {
-                        s += '"';
-                        s += '"';
-                        continue;
-                    }
-                } else {
-                    s += '"';
-                    continue;
-                }
-            }
-
-            if (c == '\\') {
-                next();
-                if (cur(&c) && c == '\n') {
-                    next();
-                    while (cur(&c) && (c == ' ' || c == '\t' || c == '\r' || c == '\n')) {
-                        next();
-                    }
-                    continue;
-                } else {
-                    s += c;
-                    continue;
-                }
-            }
-
-            next();
-            s += c;
-            continue;
-        }
-
-        addError("string didn't end with '\"\"\"' ?");
-        return false;
-    }
-
-    while (cur(&c)) {
-        next();
-        if (c == '\\') {
-            if (!cur(&c))
-                return false;
-            next();
-            switch (c) {
-            case 't': c = '\t'; break;
-            case 'n': c = '\n'; break;
-            case 'r': c = '\r'; break;
-            case '"': c = '"'; break;
-            case '\'': c = '\''; break;
-            case '\\': c = '\\'; break;
-            default: return false;
-            }
-        } else if (c == '"') {
-            *v = s;
-            return true;
-        }
-
-        s += c;
-    }
-
-    addError("string didn't end with '\"'?");
-    return false;
-}
-
-inline bool Parser::parseStringSingleQuote(Value* v)
-{
-    if (!expect('\'')) {
-        addError("string didn't start with '\''?");
-        return false;
-    }
-
-    std::string s;
-    char c;
-
-    if (cur(&c) && c == '\'') {
-        next();
-        if (!cur(&c) || c != '\'') {
-            // OK. It's empty string.
-            *v = "";
-            return true;
-        }
-        next();
-        // raw string literal started.
-        // Newline just after """ should be ignored.
-        if (cur(&c) && c == '\n')
-            next();
-
-        while (cur(&c)) {
-            if (c == '\'') {
-                next();
-                if (cur(&c) && c == '\'') {
-                    next();
-                    if (cur(&c) && c == '\'') {
-                        next();
-                        *v = s;
-                        return true;
-                    } else {
-                        s += '\'';
-                        s += '\'';
-                        continue;
-                    }
-                } else {
-                    s += '\'';
-                    continue;
-                }
-            }
-
-            next();
-            s += c;
-            continue;
-        }
-
-        addError("string didn't end with '\'\'\'' ?");
-        return false;
-    }
-
-    while (cur(&c)) {
-        next();
-        if (c == '\'') {
-            *v = s;
-            return true;
-        }
-
-        s += c;
-    }
-
-    addError("string didn't end with '\''?");
-    return false;
-}
-
-inline bool Parser::parseNumber(Value* v)
-{
-    std::string s;
-    char c;
-    while (cur(&c) && c != ' ' && c != '\t' && c != ',' && c != ']' && c != '\n' && c != '\r') {
-        next();
-        s += c;
-    }
-
-    if (isInteger(s)) {
-        std::stringstream ss(removeDelimiter(s));
-        int64_t x;
-        ss >> x;
-        *v = x;
-        return true;
-    }
-
-    if (isDouble(s)) {
-        std::stringstream ss(removeDelimiter(s));
-        double d;
-        ss >> d;
-        *v = d;
-        return true;
-    }
-
-    // Otherwise, try to parse as time.
-    return parseTime(s, v);
-}
-
 inline bool Parser::parseArray(Value* v)
 {
-    if (!expect('[')) {
-        addError("array didn't start with '['?");
+    if (!consume(TokenType::LBRACKET))
         return false;
-    }
 
     Array a;
     while (true) {
-        skipUntilNextToken();
+        skip();
 
-        char c;
-        if (cur(&c) && c == ']') {
+        if (token().type() == TokenType::RBRACKET)
             break;
-        }
 
+        skip();
         Value x;
         if (!parseValue(&x))
             return false;
 
-        if (!a.empty() && a.front().type() != x.type())
-            return false;
-        a.push_back(std::move(x));
-
-        skipUntilNextToken();
-        if (cur(&c) && c == ',') {
-            next();
-            continue;
+        if (!a.empty()) {
+            if (a.front().type() != x.type()) {
+                addError("type check failed");
+                return false;
+            }
         }
-        if (cur(&c) && c == ']')
-            break;
 
-        addError("array does not have ','?");
-        return false;
+        a.push_back(std::move(x));
+        skip();
+        if (token().type() == TokenType::RBRACKET)
+            break;
+        if (token().type() == TokenType::COMMA)
+            next();
     }
 
-    expect(']');
+    if (!consume(TokenType::RBRACKET))
+        return false;
     *v = std::move(a);
     return true;
 }
 
 inline bool Parser::parseInlineTable(Value* value)
 {
-    if (!expect('{')) {
-        addError("inline table didn't start with '{'?");
+    if (!consume(TokenType::LBRACE))
         return false;
-    }
 
     Value t((Table()));
     bool first = true;
     while (true) {
-        skipUntilNextToken();
-
-        char c;
-        if (cur(&c) && c == '}') {
+        if (token().type() == TokenType::RBRACE) {
             break;
         }
 
         if (!first) {
-            if (!expect(',')) {
+            if (token().type() != TokenType::COMMA) {
                 addError("inline table didn't have ',' for delimiter?");
                 return false;
             }
-            skipUntilNextToken();
+            next();
         }
         first = false;
 
         std::string key;
         if (!parseKey(&key))
             return false;
-        skipWhiteSpaces();
-        if (!expect('='))
+        if (!consume(TokenType::EQUAL))
             return false;
-        skipWhiteSpaces();
         Value v;
         if (!parseValue(&v))
             return false;
@@ -1433,7 +1446,8 @@ inline bool Parser::parseInlineTable(Value* value)
         t.set(key, v);
     }
 
-    expect('}');
+    if (!consume(TokenType::RBRACE))
+        return false;
     *value = std::move(t);
     return true;
 }

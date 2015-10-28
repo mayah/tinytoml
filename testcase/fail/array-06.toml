@@ -1,0 +1,3 @@
+# typecheck should fail
+x = [true, "foo bar"]
+

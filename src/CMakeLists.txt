@@ -8,7 +8,13 @@ endif()
 
 enable_testing()
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra -std=c++11")
+function(add_cxx_flags flags)
+   set(CMAKE_CXX_FLAGS "${flags} ${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
+endfunction()
+
+add_cxx_flags("-Wall -Wextra -std=c++11")
+add_cxx_flags("-DSRC_DIR=\\\"${CMAKE_SOURCE_DIR}\\\"")
+add_cxx_flags("-DTESTCASE_DIR=\\\"${CMAKE_SOURCE_DIR}/../testcase\\\"")
 
 add_subdirectory(third_party/gtest-1.7.0)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
@@ -23,4 +29,7 @@ function(add_toml_test target)
 endfunction()
 
 add_toml_test(value)
+add_toml_test(lexer)
 add_toml_test(parser)
+add_toml_test(parser_complex)
+add_toml_test(parser_failure)
