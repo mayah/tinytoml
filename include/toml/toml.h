@@ -301,6 +301,7 @@ inline Token Lexer::nextStringDoubleQuote()
 
     std::string s;
     char c;
+    bool multiline = false;
 
     if (current(&c) && c == '"') {
         next();
@@ -312,48 +313,11 @@ inline Token Lexer::nextStringDoubleQuote()
         next();
         // raw string literal started.
         // Newline just after """ should be ignored.
+        while (current(&c) && (c == ' ' || c == '\t'))
+            next();
         if (current(&c) && c == '\n')
             next();
-
-        while (current(&c)) {
-            if (c == '"') {
-                next();
-                if (current(&c) && c == '"') {
-                    next();
-                    if (current(&c) && c == '"') {
-                        next();
-                        return Token(TokenType::STRING, s);
-                    } else {
-                        s += '"';
-                        s += '"';
-                        continue;
-                    }
-                } else {
-                    s += '"';
-                    continue;
-                }
-            }
-
-            if (c == '\\') {
-                next();
-                if (current(&c) && c == '\n') {
-                    next();
-                    while (current(&c) && (c == ' ' || c == '\t' || c == '\r' || c == '\n')) {
-                        next();
-                    }
-                    continue;
-                } else {
-                    s += c;
-                    continue;
-                }
-            }
-
-            next();
-            s += c;
-            continue;
-        }
-
-        return Token(TokenType::ERROR, "string didn't end with '\"\"\"' ?");
+        multiline = true;
     }
 
     while (current(&c)) {
@@ -384,17 +348,39 @@ inline Token Lexer::nextStringDoubleQuote()
             case '"': c = '"'; break;
             case '\'': c = '\''; break;
             case '\\': c = '\\'; break;
+            case '\n':
+                while (current(&c) && (c == ' ' || c == '\t' || c == '\r' || c == '\n')) {
+                    next();
+                }
+                continue;
             default:
                 return Token(TokenType::ERROR, "string has unknown escape sequence");
             }
         } else if (c == '"') {
-            return Token(TokenType::STRING, s);
+            if (multiline) {
+                if (current(&c) && c == '"') {
+                    next();
+                    if (current(&c) && c == '"') {
+                        next();
+                        return Token(TokenType::STRING, s);
+                    } else {
+                        s += '"';
+                        s += '"';
+                        continue;
+                    }
+                } else {
+                    s += '"';
+                    continue;
+                }
+            } else {
+                return Token(TokenType::STRING, s);
+            }
         }
 
         s += c;
     }
 
-    return Token(TokenType::ERROR, "string didn't end with '\"'?");
+    return Token(TokenType::ERROR, "string didn't end");
 }
 
 inline Token Lexer::nextStringSingleQuote()
