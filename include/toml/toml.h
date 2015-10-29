@@ -1359,7 +1359,7 @@ inline bool Parser::parseKey(std::string* key)
 {
     key->clear();
 
-    if (token().type() == TokenType::IDENT) {
+    if (token().type() == TokenType::IDENT || token().type() == TokenType::STRING) {
         *key = token().strValue();
         next();
         return true;
