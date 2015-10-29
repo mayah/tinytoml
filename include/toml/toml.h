@@ -57,6 +57,40 @@ inline std::string removeDelimiter(const std::string& s)
     return r;
 }
 
+inline std::string unescape(const std::string& codepoint)
+{
+    std::uint64_t x = strtoll(codepoint.c_str(), nullptr, 16);
+    char buf[8];
+
+    if (x <= 0x7FULL) {
+        // 0xxxxxxx
+        buf[0] = 0x00 | ((x >> 0) & 0xFF);
+        buf[1] = '\0';
+    } else if (x <= 0x7FFULL) {
+        // 110yyyyx 10xxxxxx
+        buf[0] = 0xC0 | ((x >> 6) & 0xFF);
+        buf[1] = 0x80 | ((x >> 0) & 0xFF);
+        buf[2] = '\0';
+    } else if (x <= 0xFFFFULL) {
+        // 1110yyyy 10yxxxxx 10xxxxxx
+        buf[0] = 0xE0 | ((x >> 12) & 0xFF);
+        buf[1] = 0x80 | ((x >> 6) & 0xFF);
+        buf[2] = 0x80 | ((x >> 0) & 0xFF);
+        buf[3] = '\0';
+    } else if (x <= 0x10FFFFULL) {
+        // 11110yyy 10yyxxxx 10xxxxxx 10xxxxxx
+        buf[0] = 0xF0 | ((x >> 18) & 0xFF);
+        buf[1] = 0x80 | ((x >> 12) & 0xFF);
+        buf[2] = 0x80 | ((x >> 6) & 0xFF);
+        buf[3] = 0x80 | ((x >> 0) & 0xFF);
+        buf[4] = '\0';
+    } else {
+        buf[0] = '\0';
+    }
+
+    return buf;
+}
+
 inline bool isInteger(const std::string& s)
 {
     if (s.empty())
@@ -332,6 +366,21 @@ inline Token Lexer::nextStringDoubleQuote()
             case 't': c = '\t'; break;
             case 'n': c = '\n'; break;
             case 'r': c = '\r'; break;
+            case 'u':
+            case 'U': {
+                int size = c == 'u' ? 4 : 8;
+                std::string codepoint;
+                for (int i = 0; i < size; ++i) {
+                  if (current(&c) && (('0' <= c && c <= '9') || ('A' <= c && c <= 'F') || ('a' <= c && c <= 'f'))) {
+                    codepoint += c;
+                    next();
+                  } else {
+                    return Token(TokenType::ERROR, "string has unknown escape sequence");
+                  }
+                }
+                s += unescape(codepoint);
+                continue;
+            }
             case '"': c = '"'; break;
             case '\'': c = '\''; break;
             case '\\': c = '\\'; break;

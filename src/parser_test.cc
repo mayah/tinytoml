@@ -127,10 +127,12 @@ TEST(ParserTest, parseStringDoubleQuote)
 {
     toml::Value v = parse(
         "x = \"hoge\"\n"
-        "y = \"hoge \\\"fuga\\\" hoge\"");
+        "y = \"hoge \\\"fuga\\\" hoge\"\n"
+        "z = \"\\u003F\\U0000003F\"");
 
     EXPECT_EQ("hoge", v.get<string>("x"));
     EXPECT_EQ("hoge \"fuga\" hoge", v.get<string>("y"));
+    EXPECT_EQ("??", v.get<string>("z"));
 }
 
 TEST(ParserTest, parseStringDoubleQuoteMultiLine1)
