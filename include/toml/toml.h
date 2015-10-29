@@ -1179,8 +1179,6 @@ private:
     bool parseKeyValue(Value*);
     bool parseKey(std::string*);
     bool parseValue(Value*);
-    bool parseStringDoubleQuote(Value*);
-    bool parseStringSingleQuote(Value*);
     bool parseBool(Value*);
     bool parseNumber(Value*);
     bool parseArray(Value*);
@@ -1282,6 +1280,8 @@ inline Value* Parser::parseGroupKey(Value* root)
         if (token().type() == TokenType::DOT) {
             next();
             if (Value* candidate = currentValue->findSingle(key)) {
+                if (candidate->is<Array>() && candidate->size() > 0)
+                    candidate = candidate->find(candidate->size() - 1);
                 if (!candidate->is<Table>())
                     return nullptr;
                 currentValue = candidate;
@@ -1299,6 +1299,8 @@ inline Value* Parser::parseGroupKey(Value* root)
                         return nullptr;
                     currentValue = candidate->push(Table());
                 } else {
+                    if (candidate->is<Array>() && candidate->size() > 0)
+                        candidate = candidate->find(candidate->size() - 1);
                     if (!candidate->is<Table>())
                         return nullptr;
                     currentValue = candidate;
