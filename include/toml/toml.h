@@ -3,6 +3,7 @@
 
 #include <cassert>
 #include <chrono>
+#include <cmath>
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
@@ -485,15 +486,36 @@ inline Token Lexer::nextNumber()
     return parseAsTime(s);
 }
 
-inline Token Lexer::parseAsTime(const std::string& s)
+inline Token Lexer::parseAsTime(const std::string& str)
 {
-    // Time has the following form: YYYY-MM-DDThh:mm:ssZ
-    // TODO(mayah): Follow RFC?
+    const char* s = str.c_str();
 
-    int YYYY, MM, DD, hh, mm, ss;
-    if (sscanf(s.c_str(), "%d-%d-%dT%d:%d:%d", &YYYY, &MM, &DD, &hh, &mm, &ss) != 6) {
-        return Token(TokenType::ERROR, "wrong time format?");
+    int n;
+    int YYYY, MM, DD;
+    if (sscanf(s, "%d-%d-%d%n", &YYYY, &MM, &DD, &n) != 3)
+        return Token(TokenType::ERROR, "Invalid token");
+
+    if (s[n] == '\0') {
+        std::tm t;
+        t.tm_sec = 0;
+        t.tm_min = 0;
+        t.tm_hour = 0;
+        t.tm_mday = DD;
+        t.tm_mon = MM - 1;
+        t.tm_year = YYYY - 1900;
+        auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
+        return Token(TokenType::TIME, tp);
     }
+
+    if (s[n] != 'T')
+        return Token(TokenType::ERROR, "Invalid token");
+
+    s = s + n + 1;
+
+    int hh, mm;
+    double ss; // double for fraction
+    if (sscanf(s, "%d:%d:%lf%n", &hh, &mm, &ss, &n) != 3)
+        return Token(TokenType::ERROR, "Invalid token");
 
     std::tm t;
     t.tm_sec = ss;
@@ -502,8 +524,35 @@ inline Token Lexer::parseAsTime(const std::string& s)
     t.tm_mday = DD;
     t.tm_mon = MM - 1;
     t.tm_year = YYYY - 1900;
-
     auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
+    ss -= static_cast<int>(ss);
+    tp += std::chrono::microseconds(static_cast<int>(std::round(ss * 1000000)));
+
+    if (s[n] == '\0')
+        return Token(TokenType::TIME, tp);
+
+    if (s[n] == 'Z' && s[n + 1] == '\0')
+        return Token(TokenType::TIME, tp);
+
+    s = s + n;
+    // offset
+    // [+/-]%d:%d
+    char pn;
+    int oh, om;
+    if (sscanf(s, "%c%d:%d", &pn, &oh, &om) != 3)
+        return Token(TokenType::ERROR, "Invalid token");
+
+    if (pn != '+' && pn != '-')
+        return Token(TokenType::ERROR, "Invalid token");
+
+    if (pn == '+') {
+        tp -= std::chrono::hours(oh);
+        tp -= std::chrono::minutes(om);
+    } else {
+        tp += std::chrono::hours(oh);
+        tp += std::chrono::minutes(om);
+    }
+
     return Token(TokenType::TIME, tp);
 }
 

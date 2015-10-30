@@ -123,6 +123,24 @@ TEST(ParserTest, parseTime)
     EXPECT_EQ(tt, std::chrono::system_clock::to_time_t(v.get<toml::Time>("x")));
 }
 
+TEST(ParserTest, parseTimeWithTimeZone)
+{
+    toml::Value v = parse(
+        "x = 1979-05-27T07:32:00+09:00\n");
+
+    std::tm t;
+    t.tm_year = 79;
+    t.tm_mon = 4;
+    t.tm_mday = 26;
+    t.tm_hour = 22;
+    t.tm_min = 32;
+    t.tm_sec = 0;
+
+    time_t tt = timegm(&t);
+
+    EXPECT_EQ(tt, std::chrono::system_clock::to_time_t(v.get<toml::Time>("x")));
+}
+
 TEST(ParserTest, parseStringDoubleQuote)
 {
     toml::Value v = parse(
