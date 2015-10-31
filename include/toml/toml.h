@@ -33,20 +33,6 @@ inline void failwith(const char* reason, ...)
     throw std::runtime_error(buf);
 }
 
-inline std::vector<std::string> split(const std::string& s, char separator)
-{
-    std::vector<std::string> result;
-    std::string::size_type p = 0;
-    std::string::size_type q;
-    while ((q = s.find(separator, p)) != std::string::npos) {
-        result.emplace_back(s, p, q - p);
-        p = q + 1;
-    }
-
-    result.emplace_back(s, p);
-    return result;
-}
-
 inline std::string removeDelimiter(const std::string& s)
 {
     std::string r;
@@ -1067,18 +1053,27 @@ inline const Value* Value::find(const std::string& key) const
     if (!is<Table>())
         return nullptr;
 
-    auto parts = split(key, '.');
-    auto lastKey = parts.back();
-    parts.pop_back();
+    std::istringstream ss(key);
+    Lexer lexer(ss);
 
     const Value* current = this;
-    for (const auto& part : parts) {
-        current = current->findSingle(part);
-        if (!current || !current->is<Table>())
+    while (true) {
+        Token t = lexer.nextKeyToken();
+        if (!(t.type() == TokenType::IDENT || t.type() == TokenType::STRING))
             return nullptr;
-    }
 
-    return current->findSingle(lastKey);
+        std::string part = t.strValue();
+        t = lexer.nextKeyToken();
+        if (t.type() == TokenType::DOT) {
+            current = current->findSingle(part);
+            if (!current || !current->is<Table>())
+                return nullptr;
+        } else if (t.type() == TokenType::END_OF_FILE) {
+            return current->findSingle(part);
+        } else {
+            return nullptr;
+        }
+    }
 }
 
 inline Value* Value::find(const std::string& key)
@@ -1178,32 +1173,41 @@ inline Value* Value::ensureValue(const std::string& key)
 {
     if (!valid())
         *this = Value((Table()));
-
-    if (!is<Table>())
+    if (!is<Table>()) {
         failwith("encountered non table value");
-
-    auto parts = split(key, '.');
-    auto lastKey = parts.back();
-    parts.pop_back();
-
-    Value* current = this;
-    for (const auto& part : parts) {
-        if (part.empty())
-            failwith("key contains empty string?");
-
-        if (Value* candidate = current->findSingle(part)) {
-            if (!candidate->is<Table>())
-                failwith("encountered non table value");
-            current = candidate;
-            continue;
-        }
-
-        current = current->setSingle(part, Table());
+        return nullptr;
     }
 
-    if (Value* v = current->findSingle(lastKey))
-        return v;
-    return current->setSingle(lastKey, Value());
+    std::istringstream ss(key);
+    Lexer lexer(ss);
+
+    Value* current = this;
+    while (true) {
+        Token t = lexer.nextKeyToken();
+        if (!(t.type() == TokenType::IDENT || t.type() == TokenType::STRING)) {
+            failwith("invalid key");
+            return nullptr;
+        }
+
+        std::string part = t.strValue();
+        t = lexer.nextKeyToken();
+        if (t.type() == TokenType::DOT) {
+            if (Value* candidate = current->findSingle(part)) {
+                if (!candidate->is<Table>())
+                    failwith("encountered non table value");
+                current = candidate;
+            } else {
+                current = current->setSingle(part, Table());
+            }
+        } else if (t.type() == TokenType::END_OF_FILE) {
+            if (Value* v = current->findSingle(part))
+                return v;
+            return current->setSingle(part, Value());
+        } else {
+            failwith("invalid key");
+            return nullptr;
+        }
+    }
 }
 
 inline Value* Value::findSingle(const std::string& key)

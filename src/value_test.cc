@@ -266,3 +266,11 @@ TEST(ValueTest, arrayFind)
 
     EXPECT_EQ(2, v.find(0)->as<int>());
 }
+
+TEST(ValueTest, keyParsing)
+{
+    toml::Value v;
+    v.set("0000.0000", 1);
+    EXPECT_EQ(1, v.get<int>("0000.0000"));
+    EXPECT_EQ(1, v.find("0000")->get<int>("0000"));
+}
