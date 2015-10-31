@@ -447,7 +447,7 @@ inline Token Lexer::nextIdent()
 {
     std::string s;
     char c;
-    while (current(&c) && (isalnum(c) || c == '_')) {
+    while (current(&c) && (isalnum(c) || c == '_' || c == '-')) {
         s += c;
         next();
     }
