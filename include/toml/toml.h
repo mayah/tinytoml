@@ -198,8 +198,9 @@ enum class TokenType {
     ERROR,
     END_OF_FILE,
     END_OF_LINE,
-    IDENT,
     STRING,
+    MULTILINE_STRING,
+    IDENT,
     INT,
     DOUBLE,
     TIME,
@@ -363,7 +364,7 @@ inline Token Lexer::nextStringDoubleQuote()
                     next();
                     if (current(&c) && c == '"') {
                         next();
-                        return Token(TokenType::STRING, s);
+                        return Token(TokenType::MULTILINE_STRING, s);
                     } else {
                         s += '"';
                         s += '"';
@@ -411,7 +412,7 @@ inline Token Lexer::nextStringSingleQuote()
                     next();
                     if (current(&c) && c == '\'') {
                         next();
-                        return Token(TokenType::STRING, s);
+                        return Token(TokenType::MULTILINE_STRING, s);
                     } else {
                         s += '\'';
                         s += '\'';
@@ -1409,6 +1410,7 @@ inline bool Parser::parseValue(Value* v)
 {
     switch (token().type()) {
     case TokenType::STRING:
+    case TokenType::MULTILINE_STRING:
         *v = token().strValue();
         next();
         return true;

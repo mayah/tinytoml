@@ -62,7 +62,7 @@ TEST(LexerTest, string2)
     Lexer lexer(ss);
 
     Token t = lexer.nextToken();
-    EXPECT_EQ(TokenType::STRING, t.type());
+    EXPECT_EQ(TokenType::MULTILINE_STRING, t.type());
     EXPECT_EQ("foo\nbar", t.strValue());
 }
 
