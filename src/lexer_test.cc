@@ -13,7 +13,7 @@ TEST(LexerTest, empty)
     stringstream ss("");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextKeyToken().type());
 }
 
 TEST(LexerTest, newline)
@@ -21,15 +21,15 @@ TEST(LexerTest, newline)
     stringstream ss("\n");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextKeyToken().type());
 }
 
 TEST(LexerTest, comment1)
 {
     stringstream ss("#");
     Lexer lexer(ss);
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextKeyToken().type());
 }
 
 TEST(LexerTest, punctuation)
@@ -37,21 +37,31 @@ TEST(LexerTest, punctuation)
     stringstream ss("[]{},.=");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACE, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACE, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::COMMA, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::DOT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::LBRACE, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACE, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::COMMA, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::DOT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextKeyToken().type());
 }
 
-TEST(LexerTest, string1)
+TEST(LexerTest, string1_key)
 {
     stringstream ss("\"foo bar\"");
     Lexer lexer(ss);
 
-    Token t = lexer.nextToken();
+    Token t = lexer.nextKeyToken();
+    EXPECT_EQ(TokenType::STRING, t.type());
+    EXPECT_EQ("foo bar", t.strValue());
+}
+
+TEST(LexerTest, string1_value)
+{
+    stringstream ss("\"foo bar\"");
+    Lexer lexer(ss);
+
+    Token t = lexer.nextValueToken();
     EXPECT_EQ(TokenType::STRING, t.type());
     EXPECT_EQ("foo bar", t.strValue());
 }
@@ -61,7 +71,7 @@ TEST(LexerTest, string2)
     stringstream ss("\"\"\"foo\nbar\"\"\"");
     Lexer lexer(ss);
 
-    Token t = lexer.nextToken();
+    Token t = lexer.nextValueToken();
     EXPECT_EQ(TokenType::MULTILINE_STRING, t.type());
     EXPECT_EQ("foo\nbar", t.strValue());
 }
@@ -71,8 +81,8 @@ TEST(LexerTest, integer1)
     stringstream ss("1");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, integer2)
@@ -80,8 +90,8 @@ TEST(LexerTest, integer2)
     stringstream ss("0");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, integer3)
@@ -89,8 +99,8 @@ TEST(LexerTest, integer3)
     stringstream ss("+1");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, integer4)
@@ -98,8 +108,8 @@ TEST(LexerTest, integer4)
     stringstream ss("-1");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, integer5)
@@ -107,8 +117,8 @@ TEST(LexerTest, integer5)
     stringstream ss("-100_000");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, time1)
@@ -116,8 +126,8 @@ TEST(LexerTest, time1)
     stringstream ss("1979-05-27T07:32:00Z");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::TIME, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::TIME, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, exmaple1)
@@ -125,11 +135,11 @@ TEST(LexerTest, exmaple1)
     stringstream ss("x = true\n");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::BOOL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, exmaple2)
@@ -140,32 +150,32 @@ TEST(LexerTest, exmaple2)
         "z = [\"\", \"\", ]");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::COMMA, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::COMMA, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::COMMA, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::COMMA, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextValueToken().type());
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextValueToken().type());
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::STRING, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::COMMA, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::STRING, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::COMMA, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::STRING, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::COMMA, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::STRING, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::COMMA, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, exmaple3)
@@ -177,31 +187,31 @@ TEST(LexerTest, exmaple3)
         "bar = 2\n");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextKeyToken().type());
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextValueToken().type());
 
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextKeyToken().type());
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextValueToken().type());
 
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
 TEST(LexerTest, exmaple4)
@@ -211,13 +221,13 @@ TEST(LexerTest, exmaple4)
         "kotori = 1#foo bar");
     Lexer lexer(ss);
 
-    EXPECT_EQ(TokenType::LBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::RBRACKET, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::LBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::RBRACKET, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::END_OF_LINE, lexer.nextKeyToken().type());
 
-    EXPECT_EQ(TokenType::IDENT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::EQUAL, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::INT, lexer.nextToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextToken().type());
+    EXPECT_EQ(TokenType::IDENT, lexer.nextKeyToken().type());
+    EXPECT_EQ(TokenType::EQUAL, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
+    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }

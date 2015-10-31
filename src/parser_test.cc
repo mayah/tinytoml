@@ -294,3 +294,13 @@ TEST(ParserTest, commentInArray)
     EXPECT_EQ(2, ar[2].as<int>());
     EXPECT_EQ(3, ar[3].as<int>());
 }
+
+TEST(ParserTest, parseNumberKey)
+{
+    toml::Value v = parse(
+        "0000 = 1\n"
+        "0001 = 2\n");
+
+    EXPECT_EQ(1, v.get<int>("0000"));
+    EXPECT_EQ(2, v.get<int>("0001"));
+}
