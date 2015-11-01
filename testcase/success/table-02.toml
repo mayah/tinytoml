@@ -1,0 +1,14 @@
+[table."tater.man"]
+type = "pug"
+
+[a.b.c]
+x = 1
+
+[ d.e.f ]
+x = 1
+
+[ g . h . i ]
+x = 1
+
+[ j . "ʞ" . l ]
+x = 1

@@ -1,3 +1,14 @@
-x = [
-    0, 1, 2, 3, 4,
+arr1 = [ 1, 2, 3 ]
+arr2 = [ "red", "yellow", "green" ]
+arr3 = [ [ 1, 2 ], [3, 4, 5] ]
+arr4 = [ "all", 'strings', """are the same""", '''type'''] # this is ok
+arr5 = [ [ 1, 2 ], ["a", "b", "c"] ] # this is ok
+# arr6 = [ 1, 2.0 ] # note: this is NOT ok
+arr7 = [
+  1, 2, 3
+]
+
+arr8 = [
+  1,
+  2, # this is ok
 ]

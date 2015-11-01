@@ -51,25 +51,25 @@ inline std::string unescape(const std::string& codepoint)
 
     if (x <= 0x7FULL) {
         // 0xxxxxxx
-        buf[0] = 0x00 | ((x >> 0) & 0xFF);
+        buf[0] = 0x00 | ((x >> 0) & 0x7F);
         buf[1] = '\0';
     } else if (x <= 0x7FFULL) {
         // 110yyyyx 10xxxxxx
-        buf[0] = 0xC0 | ((x >> 6) & 0xFF);
-        buf[1] = 0x80 | ((x >> 0) & 0xFF);
+        buf[0] = 0xC0 | ((x >> 6) & 0xDF);
+        buf[1] = 0x80 | ((x >> 0) & 0xBF);
         buf[2] = '\0';
     } else if (x <= 0xFFFFULL) {
         // 1110yyyy 10yxxxxx 10xxxxxx
-        buf[0] = 0xE0 | ((x >> 12) & 0xFF);
-        buf[1] = 0x80 | ((x >> 6) & 0xFF);
-        buf[2] = 0x80 | ((x >> 0) & 0xFF);
+        buf[0] = 0xE0 | ((x >> 12) & 0xEF);
+        buf[1] = 0x80 | ((x >> 6) & 0xBF);
+        buf[2] = 0x80 | ((x >> 0) & 0xBF);
         buf[3] = '\0';
     } else if (x <= 0x10FFFFULL) {
         // 11110yyy 10yyxxxx 10xxxxxx 10xxxxxx
-        buf[0] = 0xF0 | ((x >> 18) & 0xFF);
-        buf[1] = 0x80 | ((x >> 12) & 0xFF);
-        buf[2] = 0x80 | ((x >> 6) & 0xFF);
-        buf[3] = 0x80 | ((x >> 0) & 0xFF);
+        buf[0] = 0xF0 | ((x >> 18) & 0xF7);
+        buf[1] = 0x80 | ((x >> 12) & 0xBF);
+        buf[2] = 0x80 | ((x >> 6) & 0xBF);
+        buf[3] = 0x80 | ((x >> 0) & 0xBF);
         buf[4] = '\0';
     } else {
         buf[0] = '\0';
@@ -1450,7 +1450,7 @@ inline bool Parser::parseKeyValue(Value* current)
         return false;
     }
 
-    current->set(key, std::move(v));
+    current->setSingle(key, std::move(v));
     return true;
 }
 

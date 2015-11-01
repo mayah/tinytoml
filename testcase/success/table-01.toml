@@ -1,0 +1,9 @@
+[table]
+key = "value"
+bare_key = "value"
+bare-key = "value"
+1234 = "bare integer"
+
+"127.0.0.1" = "value"
+"character encoding" = "value"
+"ʎǝʞ" = "value"
