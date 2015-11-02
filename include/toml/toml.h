@@ -1,5 +1,5 @@
-#ifndef TOML_H_
-#define TOML_H_
+#ifndef TINYTOML_H_
+#define TINYTOML_H_
 
 #include <cassert>
 #include <chrono>
@@ -1606,4 +1606,4 @@ inline bool Parser::parseInlineTable(Value* value)
 
 } // namespace toml
 
-#endif
+#endif // TINYTOML_H_
