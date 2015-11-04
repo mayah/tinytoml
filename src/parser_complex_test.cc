@@ -129,6 +129,14 @@ TEST(ParserComplexTest, table_02)
     EXPECT_EQ(1, v.get<int>("j.\"ʞ\".l.x"));
 }
 
+TEST(ParserComplexTest, table_03)
+{
+    toml::Value v = parse("table-03");
+
+    EXPECT_EQ(1, v.get<toml::Array>("a")[0].get<int>("b.x"));
+    EXPECT_EQ(2, v.get<toml::Array>("a")[1].get<int>("b.x"));
+}
+
 TEST(ParserComplexTest, inlinetable_01)
 {
     toml::Value v = parse("inlinetable-01");
