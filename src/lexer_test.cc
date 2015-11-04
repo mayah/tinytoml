@@ -7,7 +7,6 @@
 using namespace std;
 using namespace toml;
 
-
 TEST(LexerTest, empty)
 {
     stringstream ss("");
