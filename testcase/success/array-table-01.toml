@@ -2,10 +2,10 @@
 type = "image"
 width = 1000
 
-[[widgets.topics]]
+[[widgets.topics]] # foo bar
 topic = "some"
 count = 3
 
-[[widgets.topics]]
+[[widgets.topics]]#foo bar
 topic = "something"
 count = 4
