@@ -166,3 +166,23 @@ TEST(ParserComplexTest, array_table_01)
     EXPECT_EQ("something", secondTopics.get<string>("topic"));
     EXPECT_EQ(4, secondTopics.get<int>("count"));
 }
+
+TEST(ParserComplexTest, array_table_02)
+{
+    toml::Value v = parse("array-table-02");
+
+    const toml::Value& widgets = v.get<toml::Table>("widgets");
+
+    EXPECT_EQ("image", widgets.get<string>("type"));
+    EXPECT_EQ(1000, widgets.get<int>("width"));
+
+    const toml::Value& firstTopics = widgets.get<toml::Array>("topics")[0];
+
+    EXPECT_EQ("some", firstTopics.get<string>("topic"));
+    EXPECT_EQ(3, firstTopics.get<int>("count"));
+
+    const toml::Value& secondTopics = widgets.get<toml::Array>("topics")[1];
+
+    EXPECT_EQ("something", secondTopics.get<string>("topic"));
+    EXPECT_EQ(4, secondTopics.get<int>("count"));
+}
