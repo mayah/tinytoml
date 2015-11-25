@@ -9,3 +9,11 @@ count = 3
 [[widgets.topics]]#foo bar
 topic = "something"
 count = 4
+
+[[widgets]]
+type = "foo"
+width = 2000
+
+[[widgets.topics]]#foo bar
+topic = "bar"
+count = 5
