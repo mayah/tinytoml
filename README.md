@@ -46,7 +46,7 @@ if (!v.valid()) {
 // If found, non-null pointer will be returned.
 // You can check the type of value with is().
 // You can get the inner value by as().
-const toml::Value* x = v.find("bar");
+const toml::Value* x = v.find("foo.bar.baz");
 if (x && x->is<std::string>()) {
     cout << x->as<string>() << endl;
 } else if (x && x->is<int>()) {
@@ -65,10 +65,12 @@ for (const toml::Value& v : ar) {
     ...
 }
 
-// For convenience way, you can use get() when you're sure that the value exists.
+// For convenience way, you can use get() when you're sure that the value exists and you know the value type.
 // If type error occurred, std::runtime_error is raised.
 toml::Value v = ...;
 cout << v.get<string>("foo.bar") << endl;
+
+// If you need to check value existence or type, you should use find().
 ```
 
 ## How to test
