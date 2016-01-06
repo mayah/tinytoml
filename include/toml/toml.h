@@ -78,6 +78,8 @@ inline std::string unescape(const std::string& codepoint)
     return buf;
 }
 
+// Returns true if |s| is integer.
+// [+-]?\d+(_\d+)*
 inline bool isInteger(const std::string& s)
 {
     if (s.empty())
@@ -99,6 +101,10 @@ inline bool isInteger(const std::string& s)
     return p == s.size();
 }
 
+// Returns true if |s| is double.
+// [+-]? (\d+(_\d+)*)? (\.\d+(_\d+)*)? ([eE] [+-]? \d+(_\d+)*)?
+//       1-----------  2-------------  3----------------------
+// 2 or (1 and 3) should exist.
 inline bool isDouble(const std::string& s)
 {
     if (s.empty())
