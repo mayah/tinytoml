@@ -912,25 +912,54 @@ template<> inline bool Value::is<Time>() const { return type_ == TIME_TYPE; }
 template<> inline bool Value::is<Array>() const { return type_ == ARRAY_TYPE; }
 template<> inline bool Value::is<Table>() const { return type_ == TABLE_TYPE; }
 
-#define AS(type, var)                                                   \
-template<> inline typename call_traits<type>::return_type Value::as<type>() const \
-{                                                                       \
-    if (!is<type>()) {                                                  \
-        failwith("type error: this value is %s but %s was requested",   \
-                 typeToString(type_), #type);                           \
-    }                                                                   \
-    return var;                                                         \
+template<> inline typename call_traits<bool>::return_type Value::as<bool>() const
+{
+    if (!is<bool>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "bool");
+    return bool_;
 }
-
-AS(bool, bool_)
-AS(int64_t, int_)
-AS(int, static_cast<int>(int_))
-AS(double, double_)
-AS(std::string, *string_)
-AS(Time, *time_)
-AS(Array, *array_)
-AS(Table, *table_)
-#undef AS
+template<> inline typename call_traits<int64_t>::return_type Value::as<int64_t>() const
+{
+    if (!is<int64_t>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "int64_t");
+    return int_;
+}
+template<> inline typename call_traits<int>::return_type Value::as<int>() const
+{
+    if (!is<int>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "int");
+    return static_cast<int>(int_);
+}
+template<> inline typename call_traits<double>::return_type Value::as<double>() const
+{
+    if (!is<double>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "double");
+    return double_;
+}
+template<> inline typename call_traits<std::string>::return_type Value::as<std::string>() const
+{
+    if (!is<std::string>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "string");
+    return *string_;
+}
+template<> inline typename call_traits<Time>::return_type Value::as<Time>() const
+{
+    if (!is<Time>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "time");
+    return *time_;
+}
+template<> inline typename call_traits<Array>::return_type Value::as<Array>() const
+{
+    if (!is<Array>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "array");
+    return *array_;
+}
+template<> inline typename call_traits<Table>::return_type Value::as<Table>() const
+{
+    if (!is<Table>())
+        failwith("type error: this value is %s but %s was requested", typeToString(type_), "table");
+    return *table_;
+}
 
 inline bool Value::isNumber() const
 {
