@@ -645,27 +645,26 @@ typedef std::chrono::system_clock::time_point Time;
 typedef std::vector<Value> Array;
 typedef std::map<std::string, Value> Table;
 
+namespace internal {
+template<typename T> struct call_traits_value {
+    typedef const T param_type;
+    typedef T return_type;
+};
+template<typename T> struct call_traits_ref {
+    typedef const T& param_type;
+    typedef const T& return_type;
+};
+} // namespace internal
+
 template<typename T> struct call_traits;
-#define NONREF_TRAITS(type)                     \
-template<> struct call_traits<type> {           \
-    typedef const type param_type;              \
-    typedef type return_type;                   \
-};
-#define REF_TRAITS(type)                        \
-template<> struct call_traits<type> {           \
-    typedef const type& param_type;             \
-    typedef const type& return_type;            \
-};
-NONREF_TRAITS(bool);
-NONREF_TRAITS(int);
-NONREF_TRAITS(int64_t);
-NONREF_TRAITS(double);
-REF_TRAITS(std::string);
-REF_TRAITS(Time);
-REF_TRAITS(Array);
-REF_TRAITS(Table);
-#undef NONREF_TRAITS
-#undef REF_TRAITS
+template<> struct call_traits<bool> : public internal::call_traits_value<bool> {};
+template<> struct call_traits<int> : public internal::call_traits_value<int> {};
+template<> struct call_traits<int64_t> : public internal::call_traits_value<int64_t> {};
+template<> struct call_traits<double> : public internal::call_traits_value<double> {};
+template<> struct call_traits<std::string> : public internal::call_traits_ref<std::string> {};
+template<> struct call_traits<Time> : public internal::call_traits_ref<Time> {};
+template<> struct call_traits<Array> : public internal::call_traits_ref<Array> {};
+template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {};
 
 class Value {
 public:
