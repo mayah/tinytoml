@@ -903,21 +903,14 @@ inline bool Value::empty() const
     return size() == 0;
 }
 
-#define IS(ctype, ttype)                                \
-template<> inline bool Value::is<ctype>() const         \
-{                                                       \
-    return type_ == ttype;                              \
-}
-
-IS(bool, BOOL_TYPE)
-IS(int, INT_TYPE)
-IS(int64_t, INT_TYPE)
-IS(double, DOUBLE_TYPE)
-IS(std::string, STRING_TYPE)
-IS(Time, TIME_TYPE)
-IS(Array, ARRAY_TYPE)
-IS(Table, TABLE_TYPE)
-#undef IS
+template<> inline bool Value::is<bool>() const { return type_ == BOOL_TYPE; }
+template<> inline bool Value::is<int>() const { return type_ == INT_TYPE; }
+template<> inline bool Value::is<int64_t>() const { return type_ == INT_TYPE; }
+template<> inline bool Value::is<double>() const { return type_ == DOUBLE_TYPE; }
+template<> inline bool Value::is<std::string>() const { return type_ == STRING_TYPE; }
+template<> inline bool Value::is<Time>() const { return type_ == TIME_TYPE; }
+template<> inline bool Value::is<Array>() const { return type_ == ARRAY_TYPE; }
+template<> inline bool Value::is<Table>() const { return type_ == TABLE_TYPE; }
 
 #define AS(type, var)                                                   \
 template<> inline typename call_traits<type>::return_type Value::as<type>() const \
