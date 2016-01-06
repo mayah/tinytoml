@@ -141,6 +141,10 @@ TEST(ValueTest, string)
 
 TEST(ValueTest, time)
 {
+    std::chrono::time_point<std::chrono::system_clock> t;
+    toml::Value v1(t);
+
+    EXPECT_TRUE(v1.is<toml::Time>());
 }
 
 TEST(ValueTest, array)
