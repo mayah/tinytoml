@@ -37,7 +37,7 @@ std::ifstream ifs("foo.toml");
 toml::ParseResult pr = toml::parse(ifs);
 
 if (!pr.valid()) {
-    cout << parser.errorReason() << endl;
+    cout << pr.errorReason << endl;
     return;
 }
 
