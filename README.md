@@ -31,16 +31,21 @@ Copy include/toml/toml.h into your project, and include it from your source. Tha
 ## Example code
 
 ```c++
+// Parse foo.toml. If foo.toml is valid, pr.valid() should be true.
+// If not valid, pr.errorReason will contain the parser error reason.
 std::ifstream ifs("foo.toml");
-toml::Parser parser(ifs);
+toml::ParseResult pr = toml::parse(ifs);
 
-toml::Value v = parser.parse();
-// If toml file is valid, v would be valid.
-// Otherwise, you can get an error reason by calling Parser::errorReason().
-if (!v.valid()) {
+if (!pr.valid()) {
     cout << parser.errorReason() << endl;
     return;
 }
+
+// Note for older users: since toml::Parser has a state, I don't recommend
+// to use it directly. Using parse() is recommended.
+
+// pr.value is the parsed value.
+const toml::Value& v = pr.value;
 
 // You can find a value by find().
 // If found, non-null pointer will be returned.
@@ -57,7 +62,7 @@ if (x && x->is<std::string>()) {
 // however, you can use 'int' for convenience.
 toml::Value* z = ...;
 int x = z->as<int>();
-int y = z->as<int64_t>();
+int64_t y = z->as<int64_t>();
 // toml::Array is actually std::vector<toml::Value>.
 // So, you can use range based for, etc.
 const toml::Array& ar = z->as<toml::Array>();

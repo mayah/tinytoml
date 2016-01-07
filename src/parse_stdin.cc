@@ -5,11 +5,10 @@ using namespace std;
 
 int main(void)
 {
-    toml::Parser p(std::cin);
-    toml::Value v = p.parse();
-
-    if (!v.valid())
-        cout << p.errorReason();
-    else
-        cout << v;
+    toml::ParseResult pr = toml::parse(std::cin);
+    if (pr.valid()) {
+        cout << pr.value;
+    } else {
+        cout << pr.errorReason << endl;
+    }
 }

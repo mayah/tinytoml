@@ -21,6 +21,274 @@
 namespace toml
 {
 
+// ----------------------------------------------------------------------
+// public Declarations
+
+class Value;
+typedef std::chrono::system_clock::time_point Time;
+typedef std::vector<Value> Array;
+typedef std::map<std::string, Value> Table;
+
+namespace internal {
+template<typename T> struct call_traits_value {
+    typedef const T param_type;
+    typedef T return_type;
+};
+template<typename T> struct call_traits_ref {
+    typedef const T& param_type;
+    typedef const T& return_type;
+};
+} // namespace internal
+
+template<typename T> struct call_traits;
+template<> struct call_traits<bool> : public internal::call_traits_value<bool> {};
+template<> struct call_traits<int> : public internal::call_traits_value<int> {};
+template<> struct call_traits<int64_t> : public internal::call_traits_value<int64_t> {};
+template<> struct call_traits<double> : public internal::call_traits_value<double> {};
+template<> struct call_traits<std::string> : public internal::call_traits_ref<std::string> {};
+template<> struct call_traits<Time> : public internal::call_traits_ref<Time> {};
+template<> struct call_traits<Array> : public internal::call_traits_ref<Array> {};
+template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {};
+
+class Value {
+public:
+    enum Type {
+        NULL_TYPE,
+        BOOL_TYPE,
+        INT_TYPE,
+        DOUBLE_TYPE,
+        STRING_TYPE,
+        TIME_TYPE,
+        ARRAY_TYPE,
+        TABLE_TYPE,
+    };
+
+    Value() : type_(NULL_TYPE), null_(nullptr) {}
+    Value(bool v) : type_(BOOL_TYPE), bool_(v) {}
+    Value(int v) : type_(INT_TYPE), int_(v) {}
+    Value(int64_t v) : type_(INT_TYPE), int_(v) {}
+    Value(double v) : type_(DOUBLE_TYPE), double_(v) {}
+    Value(const std::string& v) : type_(STRING_TYPE), string_(new std::string(v)) {}
+    Value(const char* v) : type_(STRING_TYPE), string_(new std::string(v)) {}
+    Value(const Time& v) : type_(TIME_TYPE), time_(new Time(v)) {}
+    Value(const Array& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
+    Value(const Table& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
+    Value(std::string&& v) : type_(STRING_TYPE), string_(new std::string(v)) {}
+    Value(Array&& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
+    Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
+
+    Value(const Value& v);
+    Value(Value&& v);
+    Value& operator=(const Value& v);
+    Value& operator=(Value&& v);
+
+    // Someone might use a value like this:
+    // toml::Value v = x->find("foo");
+    // But this is wrong. Without this constructor,
+    // value will be unexpectedly initialized with bool.
+    Value(const void* v) = delete;
+    ~Value();
+
+    size_t size() const;
+    bool empty() const;
+    Type type() const { return type_; }
+
+    bool valid() const { return type_ != NULL_TYPE; }
+    template<typename T> bool is() const;
+    template<typename T> typename call_traits<T>::return_type as() const;
+
+    // Returns true if the value is int or double.
+    bool isNumber() const;
+    // Returns number. Convert to double.
+    double asNumber() const;
+
+    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
+    friend std::ostream& operator<<(std::ostream&, const Value&);
+
+    // For table value
+    template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
+    Value* set(const std::string& key, const Value& v);
+    void erase(const std::string& key);
+    const Value* find(const std::string& key) const;
+    Value* find(const std::string& key);
+    bool has(const std::string& key) const { return find(key) != nullptr; }
+    // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
+    bool merge(const Value&);
+
+    // key should not contain '.'
+    Value* findSingle(const std::string& key);
+    const Value* findSingle(const std::string& key) const;
+    Value* setSingle(const std::string& key, const Value& v);
+
+    // For array value
+    template<typename T> typename call_traits<T>::return_type get(size_t index) const;
+    const Value* find(size_t index) const;
+    Value* find(size_t index);
+    Value* push(const Value& v);
+
+private:
+    static const char* typeToString(Type);
+
+    Value* ensureValue(const std::string& key);
+
+    Type type_;
+    union {
+        void* null_;
+        bool bool_;
+        int64_t int_;
+        double double_;
+        std::string* string_;
+        Time* time_;
+        Array* array_;
+        Table* table_;
+    };
+};
+
+// parse() returns ParseResult.
+struct ParseResult {
+    ParseResult(toml::Value v, std::string errorReason) :
+        value(std::move(v)),
+        errorReason(std::move(errorReason)) {}
+
+    bool valid() const { return value.valid(); }
+
+    toml::Value value;
+    std::string errorReason;
+};
+
+// Parses from std::istream.
+ParseResult parse(std::istream&);
+
+// ----------------------------------------------------------------------
+// Declarations for Implementations
+//   You don't need to understand the below to use this library.
+
+enum class TokenType {
+    ERROR,
+    END_OF_FILE,
+    END_OF_LINE,
+    IDENT,
+    STRING,
+    MULTILINE_STRING,
+    BOOL,
+    INT,
+    DOUBLE,
+    TIME,
+    COMMA,
+    DOT,
+    EQUAL,
+    LBRACKET,
+    RBRACKET,
+    LBRACE,
+    RBRACE,
+};
+
+class Token {
+public:
+    explicit Token(TokenType type) : type_(type) {}
+    Token(TokenType type, const std::string& v) : type_(type), strValue_(v) {}
+    Token(TokenType type, bool v) : type_(type), intValue_(v) {}
+    Token(TokenType type, std::int64_t v) : type_(type), intValue_(v) {}
+    Token(TokenType type, double v) : type_(type), doubleValue_(v) {}
+    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), timeValue_(tp) {}
+
+    TokenType type() const { return type_; }
+    const std::string& strValue() const { return strValue_; }
+    bool boolValue() const { return intValue_; }
+    std::int64_t intValue() const { return intValue_; }
+    double doubleValue() const { return doubleValue_; }
+    std::chrono::system_clock::time_point timeValue() const { return timeValue_; }
+
+private:
+    TokenType type_;
+    std::string strValue_;
+    std::int64_t intValue_;
+    double doubleValue_;
+    std::chrono::system_clock::time_point timeValue_;
+};
+
+class Lexer {
+public:
+    explicit Lexer(std::istream& is) : is_(is), lineNo_(1) {}
+
+    Token nextKeyToken();
+    Token nextValueToken();
+
+    int lineNo() const { return lineNo_; }
+
+private:
+    bool current(char* c);
+    void next();
+    bool consume(char c);
+
+    Token nextToken(bool isValueToken);
+
+    void skipUntilNewLine();
+
+    Token nextStringDoubleQuote();
+    Token nextStringSingleQuote();
+
+    Token nextKey();
+    Token nextValue();
+
+    Token parseAsTime(const std::string&);
+
+    std::istream& is_;
+    int lineNo_;
+};
+
+class Parser {
+public:
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR) { nextKey(); }
+
+    // Parses. If failed, value should be invalid value.
+    // You can get the error by calling errorReason().
+    Value parse();
+    const std::string& errorReason();
+
+private:
+    const Token& token() const { return token_; }
+    void nextKey() { token_ = lexer_.nextKeyToken(); }
+    void nextValue() { token_ = lexer_.nextValueToken(); }
+
+    void skipForKey();
+    void skipForValue();
+
+    bool consumeForKey(TokenType);
+    bool consumeForValue(TokenType);
+    bool consumeEOLorEOFForKey();
+
+    Value* parseGroupKey(Value* root);
+
+    bool parseKeyValue(Value*);
+    bool parseKey(std::string*);
+    bool parseValue(Value*);
+    bool parseBool(Value*);
+    bool parseNumber(Value*);
+    bool parseArray(Value*);
+    bool parseInlineTable(Value*);
+
+    void addError(const std::string& reason);
+
+    Lexer lexer_;
+    Token token_;
+    std::string errorReason_;
+};
+
+// ----------------------------------------------------------------------
+// Implementations
+
+inline ParseResult parse(std::istream& is)
+{
+    Parser parser(is);
+    toml::Value v = parser.parse();
+
+    if (v.valid())
+        return ParseResult(v, std::string());
+
+    return ParseResult(v, parser.errorReason());
+}
+
 [[noreturn]]
 inline void failwith(const char* reason, ...)
 {
@@ -185,80 +453,6 @@ inline std::string escapeString(const std::string& s)
 }
 
 // ----------------------------------------------------------------------
-
-enum class TokenType {
-    ERROR,
-    END_OF_FILE,
-    END_OF_LINE,
-    IDENT,
-    STRING,
-    MULTILINE_STRING,
-    BOOL,
-    INT,
-    DOUBLE,
-    TIME,
-    COMMA,
-    DOT,
-    EQUAL,
-    LBRACKET,
-    RBRACKET,
-    LBRACE,
-    RBRACE,
-};
-
-class Token {
-public:
-    explicit Token(TokenType type) : type_(type) {}
-    Token(TokenType type, const std::string& v) : type_(type), strValue_(v) {}
-    Token(TokenType type, bool v) : type_(type), intValue_(v) {}
-    Token(TokenType type, std::int64_t v) : type_(type), intValue_(v) {}
-    Token(TokenType type, double v) : type_(type), doubleValue_(v) {}
-    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), timeValue_(tp) {}
-
-    TokenType type() const { return type_; }
-    const std::string& strValue() const { return strValue_; }
-    bool boolValue() const { return intValue_; }
-    std::int64_t intValue() const { return intValue_; }
-    double doubleValue() const { return doubleValue_; }
-    std::chrono::system_clock::time_point timeValue() const { return timeValue_; }
-
-private:
-    TokenType type_;
-    std::string strValue_;
-    std::int64_t intValue_;
-    double doubleValue_;
-    std::chrono::system_clock::time_point timeValue_;
-};
-
-class Lexer {
-public:
-    explicit Lexer(std::istream& is) : is_(is), lineNo_(1) {}
-
-    Token nextKeyToken();
-    Token nextValueToken();
-
-    int lineNo() const { return lineNo_; }
-
-private:
-    bool current(char* c);
-    void next();
-    bool consume(char c);
-
-    Token nextToken(bool isValueToken);
-
-    void skipUntilNewLine();
-
-    Token nextStringDoubleQuote();
-    Token nextStringSingleQuote();
-
-    Token nextKey();
-    Token nextValue();
-
-    Token parseAsTime(const std::string&);
-
-    std::istream& is_;
-    int lineNo_;
-};
 
 inline bool Lexer::current(char* c)
 {
@@ -639,124 +833,6 @@ inline Token Lexer::nextToken(bool isValueToken)
 }
 
 // ----------------------------------------------------------------------
-
-class Value;
-typedef std::chrono::system_clock::time_point Time;
-typedef std::vector<Value> Array;
-typedef std::map<std::string, Value> Table;
-
-namespace internal {
-template<typename T> struct call_traits_value {
-    typedef const T param_type;
-    typedef T return_type;
-};
-template<typename T> struct call_traits_ref {
-    typedef const T& param_type;
-    typedef const T& return_type;
-};
-} // namespace internal
-
-template<typename T> struct call_traits;
-template<> struct call_traits<bool> : public internal::call_traits_value<bool> {};
-template<> struct call_traits<int> : public internal::call_traits_value<int> {};
-template<> struct call_traits<int64_t> : public internal::call_traits_value<int64_t> {};
-template<> struct call_traits<double> : public internal::call_traits_value<double> {};
-template<> struct call_traits<std::string> : public internal::call_traits_ref<std::string> {};
-template<> struct call_traits<Time> : public internal::call_traits_ref<Time> {};
-template<> struct call_traits<Array> : public internal::call_traits_ref<Array> {};
-template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {};
-
-class Value {
-public:
-    enum Type {
-        NULL_TYPE,
-        BOOL_TYPE,
-        INT_TYPE,
-        DOUBLE_TYPE,
-        STRING_TYPE,
-        TIME_TYPE,
-        ARRAY_TYPE,
-        TABLE_TYPE,
-    };
-
-    Value() : type_(NULL_TYPE), null_(nullptr) {}
-    Value(bool v) : type_(BOOL_TYPE), bool_(v) {}
-    Value(int v) : type_(INT_TYPE), int_(v) {}
-    Value(int64_t v) : type_(INT_TYPE), int_(v) {}
-    Value(double v) : type_(DOUBLE_TYPE), double_(v) {}
-    Value(const std::string& v) : type_(STRING_TYPE), string_(new std::string(v)) {}
-    Value(const char* v) : type_(STRING_TYPE), string_(new std::string(v)) {}
-    Value(const Time& v) : type_(TIME_TYPE), time_(new Time(v)) {}
-    Value(const Array& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
-    Value(const Table& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
-    Value(std::string&& v) : type_(STRING_TYPE), string_(new std::string(v)) {}
-    Value(Array&& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
-    Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
-
-    Value(const Value& v);
-    Value(Value&& v);
-    Value& operator=(const Value& v);
-    Value& operator=(Value&& v);
-
-    // Someone might use a value like this:
-    // toml::Value v = x->find("foo");
-    // But this is wrong. Without this constructor,
-    // value will be unexpectedly initialized with bool.
-    Value(const void* v) = delete;
-    ~Value();
-
-    size_t size() const;
-    bool empty() const;
-    Type type() const { return type_; }
-
-    bool valid() const { return type_ != NULL_TYPE; }
-    template<typename T> bool is() const;
-    template<typename T> typename call_traits<T>::return_type as() const;
-
-    bool isNumber() const;
-    double asNumber() const;
-
-    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
-    friend std::ostream& operator<<(std::ostream&, const Value&);
-
-    // For table value
-    template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
-    Value* set(const std::string& key, const Value& v);
-    void erase(const std::string& key);
-    const Value* find(const std::string& key) const;
-    Value* find(const std::string& key);
-    bool has(const std::string& key) const { return find(key) != nullptr; }
-    // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
-    bool merge(const Value&);
-
-    // For array value
-    template<typename T> typename call_traits<T>::return_type get(size_t index) const;
-    const Value* find(size_t index) const;
-    Value* find(size_t index);
-    Value* push(const Value& v);
-
-    // key should not contain '.'
-    Value* findSingle(const std::string& key);
-    const Value* findSingle(const std::string& key) const;
-    Value* setSingle(const std::string& key, const Value& v);
-
-private:
-    static const char* typeToString(Type);
-
-    Value* ensureValue(const std::string& key);
-
-    Type type_;
-    union {
-        void* null_;
-        bool bool_;
-        int64_t int_;
-        double double_;
-        std::string* string_;
-        Time* time_;
-        Array* array_;
-        Table* table_;
-    };
-};
 
 // static
 inline const char* Value::typeToString(Value::Type type)
@@ -1260,44 +1336,6 @@ inline const Value* Value::findSingle(const std::string& key) const
 }
 
 // ----------------------------------------------------------------------
-
-class Parser {
-public:
-    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR) { nextKey(); }
-
-    // Parses. If failed(), value should be null value. You can get
-    // the error by calling errorReason().
-    Value parse();
-    const std::string& errorReason();
-
-private:
-    const Token& token() const { return token_; }
-    void nextKey() { token_ = lexer_.nextKeyToken(); }
-    void nextValue() { token_ = lexer_.nextValueToken(); }
-
-    void skipForKey();
-    void skipForValue();
-
-    bool consumeForKey(TokenType);
-    bool consumeForValue(TokenType);
-    bool consumeEOLorEOFForKey();
-
-    Value* parseGroupKey(Value* root);
-
-    bool parseKeyValue(Value*);
-    bool parseKey(std::string*);
-    bool parseValue(Value*);
-    bool parseBool(Value*);
-    bool parseNumber(Value*);
-    bool parseArray(Value*);
-    bool parseInlineTable(Value*);
-
-    void addError(const std::string& reason);
-
-    Lexer lexer_;
-    Token token_;
-    std::string errorReason_;
-};
 
 inline void Parser::skipForKey()
 {
