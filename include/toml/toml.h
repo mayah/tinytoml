@@ -27,7 +27,7 @@ inline void failwith(const char* reason, ...)
     char buf[1024];
     va_list va;
     va_start(va, reason);
-    vsprintf(buf, reason, va);
+    vsnprintf(buf, 1024, reason, va);
     va_end(va);
 
     throw std::runtime_error(buf);
