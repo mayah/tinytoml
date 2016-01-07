@@ -22,7 +22,7 @@ namespace toml
 {
 
 // ----------------------------------------------------------------------
-// public Declarations
+// Declarations
 
 class Value;
 typedef std::chrono::system_clock::time_point Time;
