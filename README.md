@@ -71,7 +71,8 @@ for (const toml::Value& v : ar) {
     ...
 }
 
-// For convenience way, you can use get() when you're sure that the value exists and you know the value type.
+// For convenience way, you can use get() when you're sure that the value exists
+// and you know the value type.
 // If type error occurred, std::runtime_error is raised.
 toml::Value v = ...;
 cout << v.get<string>("foo.bar") << endl;
