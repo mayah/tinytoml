@@ -284,9 +284,9 @@ inline ParseResult parse(std::istream& is)
     toml::Value v = parser.parse();
 
     if (v.valid())
-        return ParseResult(v, std::string());
+        return ParseResult(std::move(v), std::string());
 
-    return ParseResult(v, parser.errorReason());
+    return ParseResult(std::move(v), std::move(parser.errorReason()));
 }
 
 [[noreturn]]
