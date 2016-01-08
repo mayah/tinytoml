@@ -314,25 +314,25 @@ inline std::string removeDelimiter(const std::string& s)
 
 inline std::string unescape(const std::string& codepoint)
 {
-    std::uint64_t x = strtoll(codepoint.c_str(), nullptr, 16);
+    std::uint32_t x = strtoll(codepoint.c_str(), nullptr, 16);
     char buf[8];
 
-    if (x <= 0x7FULL) {
+    if (x <= 0x7FUL) {
         // 0xxxxxxx
         buf[0] = 0x00 | ((x >> 0) & 0x7F);
         buf[1] = '\0';
-    } else if (x <= 0x7FFULL) {
+    } else if (x <= 0x7FFUL) {
         // 110yyyyx 10xxxxxx
         buf[0] = 0xC0 | ((x >> 6) & 0xDF);
         buf[1] = 0x80 | ((x >> 0) & 0xBF);
         buf[2] = '\0';
-    } else if (x <= 0xFFFFULL) {
+    } else if (x <= 0xFFFFUL) {
         // 1110yyyy 10yxxxxx 10xxxxxx
         buf[0] = 0xE0 | ((x >> 12) & 0xEF);
         buf[1] = 0x80 | ((x >> 6) & 0xBF);
         buf[2] = 0x80 | ((x >> 0) & 0xBF);
         buf[3] = '\0';
-    } else if (x <= 0x10FFFFULL) {
+    } else if (x <= 0x10FFFFUL) {
         // 11110yyy 10yyxxxx 10xxxxxx 10xxxxxx
         buf[0] = 0xF0 | ((x >> 18) & 0xF7);
         buf[1] = 0x80 | ((x >> 12) & 0xBF);
