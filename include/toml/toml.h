@@ -146,9 +146,9 @@ private:
 
 // parse() returns ParseResult.
 struct ParseResult {
-    ParseResult(toml::Value v, std::string errorReason) :
+    ParseResult(toml::Value v, std::string er) :
         value(std::move(v)),
-        errorReason(std::move(errorReason)) {}
+        errorReason(std::move(er)) {}
 
     bool valid() const { return value.valid(); }
 
