@@ -740,7 +740,7 @@ inline Token Lexer::parseAsTime(const std::string& str)
         return Token(TokenType::ERROR, std::string("Invalid token"));
 
     std::tm t;
-    t.tm_sec = ss;
+    t.tm_sec = static_cast<int>(ss);
     t.tm_min = mm;
     t.tm_hour = hh;
     t.tm_mday = DD;
