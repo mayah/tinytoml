@@ -4,7 +4,6 @@
 #include <cassert>
 #include <chrono>
 #include <cmath>
-#include <cstdarg>
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
@@ -289,13 +288,13 @@ inline ParseResult parse(std::istream& is)
     return ParseResult(std::move(v), std::move(parser.errorReason()));
 }
 
-inline std::string format(std::stringstream &ss)
+inline std::string format(std::stringstream& ss)
 {
     return ss.str();
 }
 
 template<typename T, typename... Args>
-std::string format(std::stringstream &ss, T &&t, Args&&... args)
+std::string format(std::stringstream& ss, T &&t, Args&&... args)
 {
     ss << std::forward<T>(t);
     return format(ss, std::forward<Args>(args)...);
@@ -354,7 +353,7 @@ inline std::string unescape(const std::string& codepoint)
         buf[0] = '\0';
     }
 
-    return reinterpret_cast<char *>(buf);
+    return reinterpret_cast<char*>(buf);
 }
 
 // Returns true if |s| is integer.
@@ -515,7 +514,7 @@ inline Token Lexer::nextStringDoubleQuote()
         next();
         if (!current(&c) || c != '"') {
             // OK. It's empty string.
-            return Token(TokenType::STRING, std::string(""));
+            return Token(TokenType::STRING, std::string());
         }
 
         next();
@@ -603,7 +602,7 @@ inline Token Lexer::nextStringSingleQuote()
         next();
         if (!current(&c) || c != '\'') {
             // OK. It's empty string.
-            return Token(TokenType::STRING, std::string(""));
+            return Token(TokenType::STRING, std::string());
         }
         next();
         // raw string literal started.
