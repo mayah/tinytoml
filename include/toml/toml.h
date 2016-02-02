@@ -322,8 +322,11 @@ inline std::string removeDelimiter(const std::string& s)
 
 inline std::string unescape(const std::string& codepoint)
 {
-    std::uint32_t x = strtoll(codepoint.c_str(), nullptr, 16);
-    char buf[8];
+    std::uint32_t x;
+    std::uint8_t buf[8];
+    std::stringstream ss(codepoint);
+
+    ss >> std::hex >> x;
 
     if (x <= 0x7FUL) {
         // 0xxxxxxx
@@ -351,7 +354,7 @@ inline std::string unescape(const std::string& codepoint)
         buf[0] = '\0';
     }
 
-    return buf;
+    return reinterpret_cast<char *>(buf);
 }
 
 // Returns true if |s| is integer.
