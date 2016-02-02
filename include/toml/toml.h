@@ -289,16 +289,24 @@ inline ParseResult parse(std::istream& is)
     return ParseResult(std::move(v), std::move(parser.errorReason()));
 }
 
-[[noreturn]]
-inline void failwith(const char* reason, ...)
+inline std::string format(std::stringstream &ss)
 {
-    char buf[1024];
-    va_list va;
-    va_start(va, reason);
-    vsnprintf(buf, 1024, reason, va);
-    va_end(va);
+    return ss.str();
+}
 
-    throw std::runtime_error(buf);
+template<typename T, typename... Args>
+std::string format(std::stringstream &ss, T &&t, Args&&... args)
+{
+    ss << std::forward<T>(t);
+    return format(ss, std::forward<Args>(args)...);
+}
+
+template<typename... Args>
+[[noreturn]]
+void failwith(Args&&... args)
+{
+    std::stringstream ss;
+    throw std::runtime_error(format(ss, std::forward<Args>(args)...));
 }
 
 inline std::string removeDelimiter(const std::string& s)
@@ -996,49 +1004,49 @@ template<> inline bool Value::is<Table>() const { return type_ == TABLE_TYPE; }
 template<> inline typename call_traits<bool>::return_type Value::as<bool>() const
 {
     if (!is<bool>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "bool");
+        failwith("type error: this value is ", typeToString(type_), " but bool was requested");
     return bool_;
 }
 template<> inline typename call_traits<int64_t>::return_type Value::as<int64_t>() const
 {
     if (!is<int64_t>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "int64_t");
+        failwith("type error: this value is ", typeToString(type_), " but int64_t was requested");
     return int_;
 }
 template<> inline typename call_traits<int>::return_type Value::as<int>() const
 {
     if (!is<int>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "int");
+        failwith("type error: this value is ", typeToString(type_), " but int was requested");
     return static_cast<int>(int_);
 }
 template<> inline typename call_traits<double>::return_type Value::as<double>() const
 {
     if (!is<double>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "double");
+        failwith("type error: this value is ", typeToString(type_), " but double was requested");
     return double_;
 }
 template<> inline typename call_traits<std::string>::return_type Value::as<std::string>() const
 {
     if (!is<std::string>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "string");
+        failwith("type error: this value is ", typeToString(type_), " but string was requested");
     return *string_;
 }
 template<> inline typename call_traits<Time>::return_type Value::as<Time>() const
 {
     if (!is<Time>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "time");
+        failwith("type error: this value is ", typeToString(type_), " but time was requested");
     return *time_;
 }
 template<> inline typename call_traits<Array>::return_type Value::as<Array>() const
 {
     if (!is<Array>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "array");
+        failwith("type error: this value is ", typeToString(type_), " but array was requested");
     return *array_;
 }
 template<> inline typename call_traits<Table>::return_type Value::as<Table>() const
 {
     if (!is<Table>())
-        failwith("type error: this value is %s but %s was requested", typeToString(type_), "table");
+        failwith("type error: this value is ", typeToString(type_), " but table was requested");
     return *table_;
 }
 
@@ -1054,7 +1062,7 @@ inline double Value::asNumber() const
     if (is<double>())
         return as<double>();
 
-    failwith("type error: this value is %s but number is requested", typeToString(type_));
+    failwith("type error: this value is ", typeToString(type_), " but number is requested");
     return 0.0;
 }
 
@@ -1147,7 +1155,7 @@ inline typename call_traits<T>::return_type Value::get(const std::string& key) c
 
     const Value* obj = find(key);
     if (!obj)
-        failwith("key %s was not found.", key.c_str());
+        failwith("key ", key, " was not found.");
     return obj->as<T>();
 }
 
