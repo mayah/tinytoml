@@ -294,7 +294,7 @@ inline std::string format(std::stringstream& ss)
 }
 
 template<typename T, typename... Args>
-std::string format(std::stringstream& ss, T &&t, Args&&... args)
+std::string format(std::stringstream& ss, T&& t, Args&&... args)
 {
     ss << std::forward<T>(t);
     return format(ss, std::forward<Args>(args)...);
