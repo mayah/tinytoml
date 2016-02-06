@@ -162,6 +162,8 @@ ParseResult parse(std::istream&);
 // Declarations for Implementations
 //   You don't need to understand the below to use this library.
 
+namespace internal {
+
 enum class TokenType {
     ERROR,
     END_OF_FILE,
@@ -274,12 +276,14 @@ private:
     std::string errorReason_;
 };
 
+} // namespace internal
+
 // ----------------------------------------------------------------------
 // Implementations
 
 inline ParseResult parse(std::istream& is)
 {
-    Parser parser(is);
+    internal::Parser parser(is);
     toml::Value v = parser.parse();
 
     if (v.valid())
@@ -307,6 +311,8 @@ void failwith(Args&&... args)
     std::stringstream ss;
     throw std::runtime_error(format(ss, std::forward<Args>(args)...));
 }
+
+namespace internal {
 
 inline std::string removeDelimiter(const std::string& s)
 {
@@ -462,7 +468,12 @@ inline std::string escapeString(const std::string& s)
     return ss.str();
 }
 
+} // namespace internal
+
 // ----------------------------------------------------------------------
+// Lexer
+
+namespace internal {
 
 inline bool Lexer::current(char* c)
 {
@@ -842,6 +853,8 @@ inline Token Lexer::nextToken(bool isValueToken)
     return Token(TokenType::END_OF_FILE);
 }
 
+} // namespace internal
+
 // ----------------------------------------------------------------------
 
 // static
@@ -1085,7 +1098,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
         break;
     }
     case STRING_TYPE:
-        (*os) << '"' << escapeString(*string_) << '"';
+        (*os) << '"' << internal::escapeString(*string_) << '"';
         break;
     case TIME_TYPE: {
         time_t tt = std::chrono::system_clock::to_time_t(*time_);
@@ -1167,21 +1180,21 @@ inline const Value* Value::find(const std::string& key) const
         return nullptr;
 
     std::istringstream ss(key);
-    Lexer lexer(ss);
+    internal::Lexer lexer(ss);
 
     const Value* current = this;
     while (true) {
-        Token t = lexer.nextKeyToken();
-        if (!(t.type() == TokenType::IDENT || t.type() == TokenType::STRING))
+        internal::Token t = lexer.nextKeyToken();
+        if (!(t.type() == internal::TokenType::IDENT || t.type() == internal::TokenType::STRING))
             return nullptr;
 
         std::string part = t.strValue();
         t = lexer.nextKeyToken();
-        if (t.type() == TokenType::DOT) {
+        if (t.type() == internal::TokenType::DOT) {
             current = current->findSingle(part);
             if (!current || !current->is<Table>())
                 return nullptr;
-        } else if (t.type() == TokenType::END_OF_FILE) {
+        } else if (t.type() == internal::TokenType::END_OF_FILE) {
             return current->findSingle(part);
         } else {
             return nullptr;
@@ -1292,19 +1305,19 @@ inline Value* Value::ensureValue(const std::string& key)
     }
 
     std::istringstream ss(key);
-    Lexer lexer(ss);
+    internal::Lexer lexer(ss);
 
     Value* current = this;
     while (true) {
-        Token t = lexer.nextKeyToken();
-        if (!(t.type() == TokenType::IDENT || t.type() == TokenType::STRING)) {
+        internal::Token t = lexer.nextKeyToken();
+        if (!(t.type() == internal::TokenType::IDENT || t.type() == internal::TokenType::STRING)) {
             failwith("invalid key");
             return nullptr;
         }
 
         std::string part = t.strValue();
         t = lexer.nextKeyToken();
-        if (t.type() == TokenType::DOT) {
+        if (t.type() == internal::TokenType::DOT) {
             if (Value* candidate = current->findSingle(part)) {
                 if (!candidate->is<Table>())
                     failwith("encountered non table value");
@@ -1312,7 +1325,7 @@ inline Value* Value::ensureValue(const std::string& key)
             } else {
                 current = current->setSingle(part, Table());
             }
-        } else if (t.type() == TokenType::END_OF_FILE) {
+        } else if (t.type() == internal::TokenType::END_OF_FILE) {
             if (Value* v = current->findSingle(part))
                 return v;
             return current->setSingle(part, Value());
@@ -1346,6 +1359,8 @@ inline const Value* Value::findSingle(const std::string& key) const
 }
 
 // ----------------------------------------------------------------------
+
+namespace internal {
 
 inline void Parser::skipForKey()
 {
@@ -1678,6 +1693,8 @@ inline bool Parser::parseInlineTable(Value* value)
     *value = std::move(t);
     return true;
 }
+
+} // namespace internal
 
 } // namespace toml
 

@@ -69,7 +69,7 @@ TEST_P(ParserFailureTest, parseShouldFail)
     ifstream ifs(filename);
     ASSERT_TRUE(ifs.good());
 
-    toml::Parser p(ifs);
+    toml::internal::Parser p(ifs);
 
     toml::Value v = p.parse();
     EXPECT_FALSE(v.valid()) << v.type()

@@ -9,7 +9,7 @@ using namespace std;
 static toml::Value parse(const std::string& s)
 {
     stringstream ss(s);
-    toml::Parser p(ss);
+    toml::internal::Parser p(ss);
 
     toml::Value v = p.parse();
     EXPECT_TRUE(v.valid()) << p.errorReason();

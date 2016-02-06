@@ -18,7 +18,7 @@ toml::Value parse(const string& name)
     ifstream ifs(filename);
     EXPECT_TRUE(ifs.good());
 
-    toml::Parser p(ifs);
+    toml::internal::Parser p(ifs);
     toml::Value v = p.parse();
     EXPECT_TRUE(v.valid());
 

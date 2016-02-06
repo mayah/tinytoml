@@ -43,7 +43,8 @@ if (!pr.valid()) {
 
 // Note for users from older version:
 // Since toml::Parser has a state, I don't recommend to use it directly any more.
-// Using toml::parse() is recommended. I might change toml::Parser implementation in future.
+// So, I've moved toml::Parser to toml::internal::Parser.
+// Using toml::parse() is recommended.
 
 // pr.value is the parsed value.
 const toml::Value& v = pr.value;
