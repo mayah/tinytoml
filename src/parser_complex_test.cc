@@ -115,7 +115,9 @@ TEST(ParserComplexTest, table)
 
     EXPECT_EQ("value", v.get<string>("table.\"127.0.0.1\""));
     EXPECT_EQ("value", v.get<string>("table.\"character encoding\""));
+#if !defined(_MSC_VER)
     EXPECT_EQ("value", v.get<string>("table.\"ʎǝʞ\""));
+#endif
 }
 
 TEST(ParserComplexTest, table_02)
@@ -126,7 +128,9 @@ TEST(ParserComplexTest, table_02)
     EXPECT_EQ(1, v.get<int>("a.b.c.x"));
     EXPECT_EQ(1, v.get<int>("d.e.f.x"));
     EXPECT_EQ(1, v.get<int>("g.h.i.x"));
+#if !defined(_MSC_VER)
     EXPECT_EQ(1, v.get<int>("j.\"ʞ\".l.x"));
+#endif
 }
 
 TEST(ParserComplexTest, table_03)

@@ -8,13 +8,15 @@ endif()
 
 enable_testing()
 
-function(add_cxx_flags flags)
-   set(CMAKE_CXX_FLAGS "${flags} ${CMAKE_CXX_FLAGS}" PARENT_SCOPE)
-endfunction()
+if(MSVC)
+    # Use mutli-thread runtime library to match with gtest's one.
+    add_compile_options("/MT$<$<CONFIG:Debug>:d>")
+else()
+    add_compile_options("-Wall" "-Wextra" "-std=c++11")
+endif()
 
-add_cxx_flags("-Wall -Wextra -std=c++11")
-add_cxx_flags("-DSRC_DIR=\\\"${CMAKE_SOURCE_DIR}\\\"")
-add_cxx_flags("-DTESTCASE_DIR=\\\"${CMAKE_SOURCE_DIR}/../testcase\\\"")
+add_definitions(-DSRC_DIR="${CMAKE_SOURCE_DIR}")
+add_definitions(-DTESTCASE_DIR="${CMAKE_SOURCE_DIR}/../testcase")
 
 add_subdirectory(third_party/gtest-1.7.0)
 include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
