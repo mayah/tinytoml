@@ -72,9 +72,9 @@ public:
     Value(const Time& v) : type_(TIME_TYPE), time_(new Time(v)) {}
     Value(const Array& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
     Value(const Table& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
-    Value(std::string&& v) : type_(STRING_TYPE), string_(new std::string(v)) {}
-    Value(Array&& v) : type_(ARRAY_TYPE), array_(new Array(v)) {}
-    Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(v)) {}
+    Value(std::string&& v) : type_(STRING_TYPE), string_(new std::string(std::move(v))) {}
+    Value(Array&& v) : type_(ARRAY_TYPE), array_(new Array(std::move(v))) {}
+    Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(std::move(v))) {}
 
     Value(const Value& v);
     Value(Value&& v);
