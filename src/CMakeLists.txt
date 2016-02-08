@@ -8,6 +8,13 @@ endif()
 
 enable_testing()
 
+if(${CMAKE_VERSION} VERSION_LESS 2.8.12)
+    message("Your cmake version is ${CMAKE_VERSION}. Please update it to 2.8.12 or newer.")
+    function(add_compile_options option)
+        add_definitions(${option} ${ARGN})
+    endfunction()
+endif()
+
 if(MSVC)
     # Use mutli-thread runtime library to match with gtest's one.
     add_compile_options("/MT$<$<CONFIG:Debug>:d>")
