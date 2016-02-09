@@ -113,9 +113,6 @@ public:
     // Returns number. Convert to double.
     double asNumber() const;
 
-    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
-    friend std::ostream& operator<<(std::ostream&, const Value&);
-
     // For table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
@@ -126,16 +123,26 @@ public:
     // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
     bool merge(const Value&);
 
-    // key should not contain '.'
-    Value* findSingle(const std::string& key);
-    const Value* findSingle(const std::string& key) const;
-    Value* setSingle(const std::string& key, const Value& v);
+    // findChild finds a value with having |key|. We don't have |key|.
+    Value* findChild(const std::string& key);
+    const Value* findChild(const std::string& key) const;
+    Value* setChild(const std::string& key, const Value& v);
 
     // For array value
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
     const Value* find(size_t index) const;
     Value* find(size_t index);
     Value* push(const Value& v);
+
+    // Writer.
+    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
+    friend std::ostream& operator<<(std::ostream&, const Value&);
+
+    // Deprecated because of name confusion.
+    // TODO(mayah): Mark as deprecated.
+    Value* findSingle(const std::string& key) { return findChild(key); }
+    const Value* findSingle(const std::string& key) const { return findChild(key); }
+    Value* setSingle(const std::string& key, const Value& v) { return setChild(key, v); }
 
 private:
     static const char* typeToString(Type);
@@ -1207,11 +1214,11 @@ inline const Value* Value::find(const std::string& key) const
         std::string part = t.strValue();
         t = lexer.nextKeyToken();
         if (t.type() == internal::TokenType::DOT) {
-            current = current->findSingle(part);
+            current = current->findChild(part);
             if (!current || !current->is<Table>())
                 return nullptr;
         } else if (t.type() == internal::TokenType::END_OF_FILE) {
-            return current->findSingle(part);
+            return current->findChild(part);
         } else {
             return nullptr;
         }
@@ -1237,10 +1244,10 @@ inline bool Value::merge(const toml::Value& v)
                 if (!tmp->merge(kv.second))
                     return false;
             } else {
-                setSingle(kv.first, kv.second);
+                setChild(kv.first, kv.second);
             }
         } else {
-            setSingle(kv.first, kv.second);
+            setChild(kv.first, kv.second);
         }
     }
 
@@ -1254,7 +1261,7 @@ inline Value* Value::set(const std::string& key, const Value& v)
     return result;
 }
 
-inline Value* Value::setSingle(const std::string& key, const Value& v)
+inline Value* Value::setChild(const std::string& key, const Value& v)
 {
     if (!valid())
         *this = Value((Table()));
@@ -1334,17 +1341,17 @@ inline Value* Value::ensureValue(const std::string& key)
         std::string part = t.strValue();
         t = lexer.nextKeyToken();
         if (t.type() == internal::TokenType::DOT) {
-            if (Value* candidate = current->findSingle(part)) {
+            if (Value* candidate = current->findChild(part)) {
                 if (!candidate->is<Table>())
                     failwith("encountered non table value");
                 current = candidate;
             } else {
-                current = current->setSingle(part, Table());
+                current = current->setChild(part, Table());
             }
         } else if (t.type() == internal::TokenType::END_OF_FILE) {
-            if (Value* v = current->findSingle(part))
+            if (Value* v = current->findChild(part))
                 return v;
-            return current->setSingle(part, Value());
+            return current->setChild(part, Value());
         } else {
             failwith("invalid key");
             return nullptr;
@@ -1352,7 +1359,7 @@ inline Value* Value::ensureValue(const std::string& key)
     }
 }
 
-inline Value* Value::findSingle(const std::string& key)
+inline Value* Value::findChild(const std::string& key)
 {
     assert(is<Table>());
 
@@ -1363,7 +1370,7 @@ inline Value* Value::findSingle(const std::string& key)
     return &it->second;
 }
 
-inline const Value* Value::findSingle(const std::string& key) const
+inline const Value* Value::findChild(const std::string& key) const
 {
     assert(is<Table>());
 
@@ -1482,21 +1489,21 @@ inline Value* Parser::parseGroupKey(Value* root)
 
         if (token().type() == TokenType::DOT) {
             nextKey();
-            if (Value* candidate = currentValue->findSingle(key)) {
+            if (Value* candidate = currentValue->findChild(key)) {
                 if (candidate->is<Array>() && candidate->size() > 0)
                     candidate = candidate->find(candidate->size() - 1);
                 if (!candidate->is<Table>())
                     return nullptr;
                 currentValue = candidate;
             } else {
-                currentValue = currentValue->setSingle(key, Table());
+                currentValue = currentValue->setChild(key, Table());
             }
             continue;
         }
 
         if (token().type() == TokenType::RBRACKET) {
             nextKey();
-            if (Value* candidate = currentValue->findSingle(key)) {
+            if (Value* candidate = currentValue->findChild(key)) {
                 if (isArray) {
                     if (!candidate->is<Array>())
                         return nullptr;
@@ -1510,10 +1517,10 @@ inline Value* Parser::parseGroupKey(Value* root)
                 }
             } else {
                 if (isArray) {
-                    currentValue = currentValue->setSingle(key, Array());
+                    currentValue = currentValue->setChild(key, Array());
                     currentValue = currentValue->push(Table());
                 } else {
-                    currentValue = currentValue->setSingle(key, Table());
+                    currentValue = currentValue->setChild(key, Table());
                 }
             }
             break;
@@ -1556,7 +1563,7 @@ inline bool Parser::parseKeyValue(Value* current)
         return false;
     }
 
-    current->setSingle(key, std::move(v));
+    current->setChild(key, std::move(v));
     return true;
 }
 
