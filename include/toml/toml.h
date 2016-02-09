@@ -17,8 +17,7 @@
 #include <utility>
 #include <vector>
 
-namespace toml
-{
+namespace toml {
 
 #if defined(_MSC_VER)
 inline time_t timegm(std::tm* timeptr)
@@ -1748,7 +1747,6 @@ inline bool Parser::parseInlineTable(Value* value)
 }
 
 } // namespace internal
-
 } // namespace toml
 
 #endif // TINYTOML_H_
