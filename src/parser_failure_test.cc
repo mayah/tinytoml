@@ -1,6 +1,10 @@
 #include "toml/toml.h"
 
+#if defined(_MSC_VER)
+#include <windows.h>
+#else
 #include <dirent.h>
+#endif
 
 #include <algorithm>
 #include <fstream>
@@ -15,6 +19,20 @@ namespace {
 
 bool listFiles(const string& path, vector<string>* files)
 {
+#if defined(_MSC_VER)
+    WIN32_FIND_DATA fileData;
+    HANDLE hFind = FindFirstFile(path.c_str(), &fileData);
+    if (hFind == INVALID_HANDLE_VALUE)
+        return false;
+
+    while (true) {
+        files->push_back(fileData.cFileName);
+        if (!FindNextFile(hFind, &fileData))
+            break;
+    }
+    if (FindClose(hFind))
+        return false;
+#else
     DIR* dir = opendir(path.c_str());
     if (!dir)
         return false;
@@ -28,6 +46,7 @@ bool listFiles(const string& path, vector<string>* files)
 
     if (closedir(dir) < 0)
         return false;
+#endif
 
     return true;
 }

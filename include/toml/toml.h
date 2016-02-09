@@ -20,6 +20,18 @@
 namespace toml
 {
 
+#if defined(_MSC_VER)
+inline time_t timegm(std::tm* timeptr)
+{
+    return _mkgmtime(timeptr);
+}
+inline std::tm* gmtime_r(const time_t* timer, std::tm* result)
+{
+    gmtime_s(result, timer);
+    return result;
+}
+#endif
+
 // ----------------------------------------------------------------------
 // Declarations
 
@@ -305,7 +317,11 @@ std::string format(std::stringstream& ss, T&& t, Args&&... args)
 }
 
 template<typename... Args>
+#if defined(_MSC_VER)
+__declspec(noreturn)
+#else
 [[noreturn]]
+#endif
 void failwith(Args&&... args)
 {
     std::stringstream ss;

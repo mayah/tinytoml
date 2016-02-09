@@ -6,6 +6,10 @@
 
 using namespace std;
 
+#if defined(_MSC_VER)
+using toml::timegm;
+#endif
+
 static toml::Value parse(const std::string& s)
 {
     stringstream ss(s);
