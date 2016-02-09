@@ -116,10 +116,11 @@ public:
     // For table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
-    void erase(const std::string& key);
     const Value* find(const std::string& key) const;
     Value* find(const std::string& key);
     bool has(const std::string& key) const { return find(key) != nullptr; }
+    bool erase(const std::string& key);
+
     // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
     bool merge(const Value&);
 
@@ -127,6 +128,7 @@ public:
     Value* findChild(const std::string& key);
     const Value* findChild(const std::string& key) const;
     Value* setChild(const std::string& key, const Value& v);
+    bool eraseChild(const std::string& key);
 
     // For array value
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
@@ -1273,12 +1275,40 @@ inline Value* Value::setChild(const std::string& key, const Value& v)
     return &(*table_)[key];
 }
 
-inline void Value::erase(const std::string& key)
+inline bool Value::erase(const std::string& key)
+{
+    if (!is<Table>())
+        return false;
+
+    std::istringstream ss(key);
+    internal::Lexer lexer(ss);
+
+    Value* current = this;
+    while (true) {
+        internal::Token t = lexer.nextKeyToken();
+        if (!(t.type() == internal::TokenType::IDENT || t.type() == internal::TokenType::STRING))
+            return false;
+
+        std::string part = t.strValue();
+        t = lexer.nextKeyToken();
+        if (t.type() == internal::TokenType::DOT) {
+            current = current->findChild(part);
+            if (!current || !current->is<Table>())
+                return false;
+        } else if (t.type() == internal::TokenType::END_OF_FILE) {
+            return current->eraseChild(part);
+        } else {
+            return false;
+        }
+    }
+}
+
+inline bool Value::eraseChild(const std::string& key)
 {
     if (!is<Table>())
         failwith("type must be table to do erase(key).");
 
-    table_->erase(key);
+    return table_->erase(key) > 0;
 }
 
 template<typename T>

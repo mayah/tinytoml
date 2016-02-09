@@ -204,6 +204,21 @@ TEST(ValueTest, table2)
     EXPECT_EQ(1, v.find("key1")->find("key2")->as<int>());
 }
 
+TEST(ValueTest, tableErase)
+{
+    toml::Value v;
+    v.set("key1.key2", 1);
+
+    EXPECT_TRUE(v.erase("key1.key2"));
+    EXPECT_EQ(nullptr, v.find("key1.key2"));
+
+    // key1 will exist.
+    EXPECT_TRUE(v.has("key1"));
+    v.erase("key1");
+
+    EXPECT_FALSE(v.has("key1"));
+}
+
 TEST(ValueTest, number)
 {
     toml::Value v(1);
