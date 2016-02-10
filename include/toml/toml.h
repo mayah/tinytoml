@@ -134,6 +134,7 @@ public:
 private:
     static const char* typeToString(Type);
 
+    template<typename T> void assureType() const;
     Value* ensureValue(const std::string& key);
 
     Type type_;
@@ -1039,52 +1040,63 @@ template<> inline bool Value::is<Time>() const { return type_ == TIME_TYPE; }
 template<> inline bool Value::is<Array>() const { return type_ == ARRAY_TYPE; }
 template<> inline bool Value::is<Table>() const { return type_ == TABLE_TYPE; }
 
+namespace internal {
+template<typename T> const char* type_name();
+template<> const char* type_name<bool>() { return "bool"; }
+template<> const char* type_name<int>() { return "int"; }
+template<> const char* type_name<int64_t>() { return "int64_t"; }
+template<> const char* type_name<double>() { return "double"; }
+template<> const char* type_name<std::string>() { return "string"; }
+template<> const char* type_name<toml::Time>() { return "time"; }
+template<> const char* type_name<toml::Array>() { return "array"; }
+template<> const char* type_name<toml::Table>() { return "table"; }
+} // namespace internal
+
+template<typename T>
+inline void Value::assureType() const
+{
+    if (!is<T>())
+        failwith("type error: this value is ", typeToString(type_), " but ", internal::type_name<T>(), " was requested");
+}
+
 template<> inline typename call_traits<bool>::return_type Value::as<bool>() const
 {
-    if (!is<bool>())
-        failwith("type error: this value is ", typeToString(type_), " but bool was requested");
+    assureType<bool>();
     return bool_;
 }
 template<> inline typename call_traits<int64_t>::return_type Value::as<int64_t>() const
 {
-    if (!is<int64_t>())
-        failwith("type error: this value is ", typeToString(type_), " but int64_t was requested");
+    assureType<int64_t>();
     return int_;
 }
 template<> inline typename call_traits<int>::return_type Value::as<int>() const
 {
-    if (!is<int>())
-        failwith("type error: this value is ", typeToString(type_), " but int was requested");
+    assureType<int>();
     return static_cast<int>(int_);
 }
 template<> inline typename call_traits<double>::return_type Value::as<double>() const
 {
-    if (!is<double>())
-        failwith("type error: this value is ", typeToString(type_), " but double was requested");
+    assureType<double>();
     return double_;
 }
 template<> inline typename call_traits<std::string>::return_type Value::as<std::string>() const
 {
-    if (!is<std::string>())
-        failwith("type error: this value is ", typeToString(type_), " but string was requested");
+    assureType<std::string>();
     return *string_;
 }
 template<> inline typename call_traits<Time>::return_type Value::as<Time>() const
 {
-    if (!is<Time>())
-        failwith("type error: this value is ", typeToString(type_), " but time was requested");
+    assureType<Time>();
     return *time_;
 }
 template<> inline typename call_traits<Array>::return_type Value::as<Array>() const
 {
-    if (!is<Array>())
-        failwith("type error: this value is ", typeToString(type_), " but array was requested");
+    assureType<Array>();
     return *array_;
 }
 template<> inline typename call_traits<Table>::return_type Value::as<Table>() const
 {
-    if (!is<Table>())
-        failwith("type error: this value is ", typeToString(type_), " but table was requested");
+    assureType<Table>();
     return *table_;
 }
 
