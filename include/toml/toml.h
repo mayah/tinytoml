@@ -29,11 +29,9 @@ typedef std::map<std::string, Value> Table;
 
 namespace internal {
 template<typename T> struct call_traits_value {
-    typedef const T param_type;
     typedef T return_type;
 };
 template<typename T> struct call_traits_ref {
-    typedef const T& param_type;
     typedef const T& return_type;
 };
 } // namespace internal
