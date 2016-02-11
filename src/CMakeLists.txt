@@ -37,8 +37,16 @@ function(add_toml_test target)
     add_test(${target}_test ${target}_test)
 endfunction()
 
+function(add_toml_link_test target)
+    add_executable(${target}_test ${target}_test.cc empty.cc)
+    target_link_libraries(${target}_test gtest gtest_main)
+    add_test(${target}_test ${target}_test)
+endfunction()
+
 add_toml_test(value)
 add_toml_test(lexer)
 add_toml_test(parser)
 add_toml_test(parser_complex)
 add_toml_test(parser_failure)
+
+add_toml_link_test(link)
