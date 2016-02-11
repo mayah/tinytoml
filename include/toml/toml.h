@@ -1111,15 +1111,15 @@ struct Value::ValueConverter<std::vector<T>>
 };
 
 namespace internal {
-template<typename T> const char* type_name();
-template<> const char* type_name<bool>() { return "bool"; }
-template<> const char* type_name<int>() { return "int"; }
-template<> const char* type_name<int64_t>() { return "int64_t"; }
-template<> const char* type_name<double>() { return "double"; }
-template<> const char* type_name<std::string>() { return "string"; }
-template<> const char* type_name<toml::Time>() { return "time"; }
-template<> const char* type_name<toml::Array>() { return "array"; }
-template<> const char* type_name<toml::Table>() { return "table"; }
+template<typename T> inline const char* type_name();
+template<> inline const char* type_name<bool>() { return "bool"; }
+template<> inline const char* type_name<int>() { return "int"; }
+template<> inline const char* type_name<int64_t>() { return "int64_t"; }
+template<> inline const char* type_name<double>() { return "double"; }
+template<> inline const char* type_name<std::string>() { return "string"; }
+template<> inline const char* type_name<toml::Time>() { return "time"; }
+template<> inline const char* type_name<toml::Array>() { return "array"; }
+template<> inline const char* type_name<toml::Table>() { return "table"; }
 } // namespace internal
 
 template<typename T>
