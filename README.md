@@ -78,6 +78,10 @@ for (const toml::Value& v : ar) {
 toml::Value v = ...;
 cout << v.get<string>("foo.bar") << endl;
 
+// For array type, you can also use get<std::vector<int>>() etc.
+// Note that a fresh vector<int> is allocated.
+std::vector<int> vs = v.get<std::vector<int>>();
+
 // If you need to check value existence or type, you should use find().
 ```
 

@@ -46,6 +46,10 @@ template<> struct call_traits<Time> : public internal::call_traits_ref<Time> {};
 template<> struct call_traits<Array> : public internal::call_traits_ref<Array> {};
 template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {};
 
+// A value is returned for std::vector<T>. Not reference.
+// This is because a fresh vector is made.
+template<typename T> struct call_traits<std::vector<T>> : public internal::call_traits_value<std::vector<T>> {};
+
 class Value {
 public:
     enum Type {
@@ -137,6 +141,8 @@ private:
     template<typename T> void assureType() const;
     Value* ensureValue(const std::string& key);
 
+    template<typename T> struct ValueConverter;
+
     Type type_;
     union {
         void* null_;
@@ -148,6 +154,8 @@ private:
         Array* array_;
         Table* table_;
     };
+
+    template<typename T> friend struct ValueConverter;
 };
 
 // parse() returns ParseResult.
@@ -1031,14 +1039,76 @@ inline bool Value::empty() const
     return size() == 0;
 }
 
-template<> inline bool Value::is<bool>() const { return type_ == BOOL_TYPE; }
-template<> inline bool Value::is<int>() const { return type_ == INT_TYPE; }
-template<> inline bool Value::is<int64_t>() const { return type_ == INT_TYPE; }
-template<> inline bool Value::is<double>() const { return type_ == DOUBLE_TYPE; }
-template<> inline bool Value::is<std::string>() const { return type_ == STRING_TYPE; }
-template<> inline bool Value::is<Time>() const { return type_ == TIME_TYPE; }
-template<> inline bool Value::is<Array>() const { return type_ == ARRAY_TYPE; }
-template<> inline bool Value::is<Table>() const { return type_ == TABLE_TYPE; }
+template<> struct Value::ValueConverter<bool>
+{
+    bool is(const Value& v) { return v.type() == Value::BOOL_TYPE; }
+    bool to(const Value& v) { v.assureType<bool>(); return v.bool_; }
+
+};
+template<> struct Value::ValueConverter<int64_t>
+{
+    bool is(const Value& v) { return v.type() == Value::INT_TYPE; }
+    int64_t to(const Value& v) { v.assureType<int64_t>(); return v.int_; }
+};
+template<> struct Value::ValueConverter<int>
+{
+    bool is(const Value& v) { return v.type() == Value::INT_TYPE; }
+    int to(const Value& v) { v.assureType<int>(); return static_cast<int>(v.int_); }
+};
+template<> struct Value::ValueConverter<double>
+{
+    bool is(const Value& v) { return v.type() == Value::DOUBLE_TYPE; }
+    double to(const Value& v) { v.assureType<double>(); return v.double_; }
+};
+template<> struct Value::ValueConverter<std::string>
+{
+    bool is(const Value& v) { return v.type() == Value::STRING_TYPE; }
+    const std::string& to(const Value& v) { v.assureType<std::string>(); return *v.string_; }
+};
+template<> struct Value::ValueConverter<Time>
+{
+    bool is(const Value& v) { return v.type() == Value::TIME_TYPE; }
+    const Time& to(const Value& v) { v.assureType<Time>(); return *v.time_; }
+};
+template<> struct Value::ValueConverter<Array>
+{
+    bool is(const Value& v) { return v.type() == Value::ARRAY_TYPE; }
+    const Array& to(const Value& v) { v.assureType<Array>(); return *v.array_; }
+};
+template<> struct Value::ValueConverter<Table>
+{
+    bool is(const Value& v) { return v.type() == Value::TABLE_TYPE; }
+    const Table& to(const Value& v) { v.assureType<Table>(); return *v.table_; }
+};
+
+template<typename T>
+struct Value::ValueConverter<std::vector<T>>
+{
+    bool is(const Value& v)
+    {
+        if (v.type() != Value::ARRAY_TYPE)
+            return false;
+        const Array& array = v.as<Array>();
+        if (array.empty())
+            return true;
+        return array.front().is<T>();
+    }
+
+    std::vector<T> to(const Value& v)
+    {
+        const Array& array = v.as<Array>();
+        if (array.empty())
+            return std::vector<T>();
+        array.front().assureType<T>();
+
+        std::vector<T> result;
+        for (const auto& element : array) {
+            result.push_back(element.as<T>());
+        }
+
+        return result;
+    }
+};
 
 namespace internal {
 template<typename T> const char* type_name();
@@ -1059,45 +1129,16 @@ inline void Value::assureType() const
         failwith("type error: this value is ", typeToString(type_), " but ", internal::type_name<T>(), " was requested");
 }
 
-template<> inline typename call_traits<bool>::return_type Value::as<bool>() const
+template<typename T>
+inline bool Value::is() const
 {
-    assureType<bool>();
-    return bool_;
+    return ValueConverter<T>().is(*this);
 }
-template<> inline typename call_traits<int64_t>::return_type Value::as<int64_t>() const
+
+template<typename T>
+inline typename call_traits<T>::return_type Value::as() const
 {
-    assureType<int64_t>();
-    return int_;
-}
-template<> inline typename call_traits<int>::return_type Value::as<int>() const
-{
-    assureType<int>();
-    return static_cast<int>(int_);
-}
-template<> inline typename call_traits<double>::return_type Value::as<double>() const
-{
-    assureType<double>();
-    return double_;
-}
-template<> inline typename call_traits<std::string>::return_type Value::as<std::string>() const
-{
-    assureType<std::string>();
-    return *string_;
-}
-template<> inline typename call_traits<Time>::return_type Value::as<Time>() const
-{
-    assureType<Time>();
-    return *time_;
-}
-template<> inline typename call_traits<Array>::return_type Value::as<Array>() const
-{
-    assureType<Array>();
-    return *array_;
-}
-template<> inline typename call_traits<Table>::return_type Value::as<Table>() const
-{
-    assureType<Table>();
-    return *table_;
+    return ValueConverter<T>().to(*this);
 }
 
 inline bool Value::isNumber() const

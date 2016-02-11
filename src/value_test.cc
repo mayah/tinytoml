@@ -147,17 +147,150 @@ TEST(ValueTest, time)
     EXPECT_TRUE(v1.is<toml::Time>());
 }
 
-TEST(ValueTest, array)
+TEST(ValueTest, bool_array)
 {
-    toml::Value v;
+    toml::Value v((toml::Array()));
+    v.push(false);
+    v.push(true);
 
-    // If we call push to null value, the value will become array automatically.
+    vector<bool> vs = v.as<vector<bool>>();
+    EXPECT_EQ(2U, vs.size());
+    EXPECT_FALSE(vs[0]);
+    EXPECT_TRUE(vs[1]);
+
+    EXPECT_TRUE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, int_array)
+{
+    toml::Value v((toml::Array()));
     v.push(0);
     v.push(1);
 
-    EXPECT_TRUE(v.is<toml::Array>());
-    EXPECT_EQ(0, v.get<int>(0));
-    EXPECT_EQ(1, v.get<int>(1));
+    vector<int> vs = v.as<vector<int>>();
+    EXPECT_EQ(2U, vs.size());
+    EXPECT_EQ(0, vs[0]);
+    EXPECT_EQ(1, vs[1]);
+
+    vector<int64_t> vs2 = v.as<vector<int64_t>>();
+    EXPECT_EQ(2U, vs2.size());
+    EXPECT_EQ(0, vs2[0]);
+    EXPECT_EQ(1, vs2[1]);
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_TRUE(v.is<std::vector<int>>());
+    EXPECT_TRUE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, double_array)
+{
+    toml::Value v((toml::Array()));
+    v.push(0.0);
+    v.push(1.0);
+
+    vector<double> vs = v.as<vector<double>>();
+    EXPECT_EQ(2U, vs.size());
+    EXPECT_EQ(0.0, vs[0]);
+    EXPECT_EQ(1.0, vs[1]);
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_TRUE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, string_array)
+{
+    toml::Value v((toml::Array()));
+    v.push("foo");
+    v.push("bar");
+
+    vector<string> vs = v.as<vector<std::string>>();
+    EXPECT_EQ(2U, vs.size());
+    EXPECT_EQ("foo", vs[0]);
+    EXPECT_EQ("bar", vs[1]);
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_TRUE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, time_array)
+{
+    std::chrono::time_point<std::chrono::system_clock> t;
+
+    toml::Value v((toml::Array()));
+    v.push(t);
+
+    vector<toml::Time> vs = v.as<vector<toml::Time>>();
+    EXPECT_EQ(1U, vs.size());
+    EXPECT_EQ(t, vs[0]);
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_TRUE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, array_array)
+{
+    toml::Value v((toml::Array()));
+    v.push(v);
+
+    vector<toml::Array> vs = v.as<vector<toml::Array>>();
+    EXPECT_EQ(1U, vs.size());
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_TRUE(v.is<std::vector<toml::Array>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Table>>());
+}
+
+TEST(ValueTest, table_array)
+{
+    toml::Value v((toml::Array()));
+    v.push(toml::Table());
+
+    vector<toml::Table> vs = v.as<vector<toml::Table>>();
+    EXPECT_EQ(1U, vs.size());
+
+    EXPECT_FALSE(v.is<std::vector<bool>>());
+    EXPECT_FALSE(v.is<std::vector<int>>());
+    EXPECT_FALSE(v.is<std::vector<int64_t>>());
+    EXPECT_FALSE(v.is<std::vector<double>>());
+    EXPECT_FALSE(v.is<std::vector<string>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Time>>());
+    EXPECT_FALSE(v.is<std::vector<toml::Array>>());
+    EXPECT_TRUE(v.is<std::vector<toml::Table>>());
 }
 
 TEST(ValueTest, arrayWrite)
@@ -202,6 +335,23 @@ TEST(ValueTest, table2)
 
     v.set("key1.key2", 1);
     EXPECT_EQ(1, v.find("key1")->find("key2")->as<int>());
+}
+
+TEST(ValueTest, table3)
+{
+    toml::Value ary;
+    ary.push(0);
+    ary.push(1);
+    ary.push(2);
+
+    toml::Value v;
+    v.set("key", ary);
+
+    std::vector<int> vs = v.get<std::vector<int>>("key");
+    EXPECT_EQ(3U, vs.size());
+    EXPECT_EQ(0, vs[0]);
+    EXPECT_EQ(1, vs[1]);
+    EXPECT_EQ(2, vs[2]);
 }
 
 TEST(ValueTest, tableErase)
