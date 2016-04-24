@@ -78,9 +78,9 @@ public:
     Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(std::move(v))) {}
 
     Value(const Value& v);
-    Value(Value&& v);
+    Value(Value&& v) noexcept;
     Value& operator=(const Value& v);
-    Value& operator=(Value&& v);
+    Value& operator=(Value&& v) noexcept;
 
     // Someone might use a value like this:
     // toml::Value v = x->find("foo");
@@ -924,7 +924,7 @@ inline Value::Value(const Value& v) :
     }
 }
 
-inline Value::Value(Value&& v) :
+inline Value::Value(Value&& v) noexcept :
     type_(v.type_)
 {
     switch (v.type_) {
@@ -972,7 +972,7 @@ inline Value& Value::operator=(const Value& v)
     return *this;
 }
 
-inline Value& Value::operator=(Value&& v)
+inline Value& Value::operator=(Value&& v) noexcept
 {
     if (this == &v)
         return *this;
