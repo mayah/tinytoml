@@ -135,6 +135,9 @@ public:
     const Value* findSingle(const std::string& key) const { return findChild(key); }
     Value* setSingle(const std::string& key, const Value& v) { return setChild(key, v); }
 
+    friend bool operator==(const Value& lhs, const Value& rhs);
+    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
+
 private:
     static const char* typeToString(Type);
 
@@ -1236,6 +1239,36 @@ inline std::ostream& operator<<(std::ostream& os, const toml::Value& v)
 {
     v.write(&os);
     return os;
+}
+
+// static
+inline bool operator==(const Value& lhs, const Value& rhs)
+{
+    if (lhs.type() != rhs.type())
+        return false;
+
+    switch (lhs.type()) {
+    case Value::Type::NULL_TYPE:
+        return true;
+    case Value::Type::BOOL_TYPE:
+        return lhs.bool_ == rhs.bool_;
+    case Value::Type::INT_TYPE:
+        return lhs.int_ == rhs.int_;
+    case Value::Type::DOUBLE_TYPE:
+        return lhs.double_ == rhs.double_;
+    case Value::Type::STRING_TYPE:
+        return *lhs.string_ == *rhs.string_;
+    case Value::Type::TIME_TYPE:
+        return *lhs.time_ == *rhs.time_;
+    case Value::Type::ARRAY_TYPE:
+        return *lhs.array_ == *rhs.array_;
+    case Value::Type::TABLE_TYPE:
+        return *lhs.table_ == *rhs.table_;
+    default:
+        assert(false);
+        failwith("unknown type");
+        return false;
+    }
 }
 
 template<typename T>
