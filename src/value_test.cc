@@ -476,3 +476,15 @@ TEST(ValueTest, comparing)
 
     EXPECT_TRUE(i1 != d1);
 }
+
+TEST(ValueTest, operatorBox)
+{
+    toml::Value v;
+    v["key"] = "value";
+    v["foo.bar"] = "foobar";
+    v.setChild("foo", "bar");
+
+    EXPECT_EQ("value", v.findChild("key")->as<std::string>());
+    EXPECT_EQ("foobar", v.findChild("foo.bar")->as<std::string>());
+    EXPECT_EQ("bar", v["foo"].as<std::string>());
+}

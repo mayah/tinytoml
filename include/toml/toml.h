@@ -110,6 +110,8 @@ public:
     bool has(const std::string& key) const { return find(key) != nullptr; }
     bool erase(const std::string& key);
 
+    Value& operator[](const std::string& key);
+
     // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
     bool merge(const Value&);
 
@@ -1393,6 +1395,17 @@ inline bool Value::eraseChild(const std::string& key)
         failwith("type must be table to do erase(key).");
 
     return table_->erase(key) > 0;
+}
+
+inline Value& Value::operator[](const std::string& key)
+{
+    if (!valid())
+        *this = Value((Table()));
+
+    if (Value* v = findChild(key))
+        return *v;
+
+    return *setChild(key, Value());
 }
 
 template<typename T>
