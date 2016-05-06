@@ -447,6 +447,7 @@ TEST(ValueTest, keyParsing)
 TEST(ValueTest, comparing)
 {
     toml::Value n1, n2;
+    toml::Value b1(true), b2(false), b3(true);
     toml::Value i1(1), i2(2), i3(1);
     toml::Value d1(1.0), d2(2.0), d3(1.0);
     toml::Value s1("foo"), s2("bar"), s3("foo");
@@ -461,11 +462,13 @@ TEST(ValueTest, comparing)
     t3.set("k1", "v1");
 
     EXPECT_TRUE(n1 == n2);
+    EXPECT_TRUE(b1 == b3);
     EXPECT_TRUE(i1 == i3);
     EXPECT_TRUE(d1 == d3);
     EXPECT_TRUE(s1 == s3);
     EXPECT_TRUE(t1 == t3);
 
+    EXPECT_TRUE(b1 != b2);
     EXPECT_TRUE(i1 != i2);
     EXPECT_TRUE(d1 != d2);
     EXPECT_TRUE(s1 != s2);
