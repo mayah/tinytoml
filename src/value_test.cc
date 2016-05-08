@@ -141,10 +141,18 @@ TEST(ValueTest, string)
 
 TEST(ValueTest, time)
 {
-    std::chrono::time_point<std::chrono::system_clock> t;
+    auto t = std::chrono::system_clock::now();
     toml::Value v1(t);
 
     EXPECT_TRUE(v1.is<toml::Time>());
+}
+
+TEST(ValueTest, time_as_time_t)
+{
+    auto t = std::chrono::system_clock::now();
+    toml::Value v(t);
+
+    EXPECT_EQ(std::chrono::system_clock::to_time_t(t), v.as_time_t());
 }
 
 TEST(ValueTest, bool_array)

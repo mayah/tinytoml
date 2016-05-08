@@ -97,12 +97,24 @@ public:
     template<typename T> bool is() const;
     template<typename T> typename call_traits<T>::return_type as() const;
 
+    // ----------------------------------------------------------------------
+    // For integer/floating value
+
     // Returns true if the value is int or double.
     bool isNumber() const;
     // Returns number. Convert to double.
     double asNumber() const;
 
-    // For table value
+    // ----------------------------------------------------------------------
+    // For Time value
+
+    // Converts to time_t if the internal value is Time.
+    // We don't have as<std::time_t>(). Since time_t is basically signed long,
+    // it's something like a method to converting to (normal) integer.
+    std::time_t as_time_t() const;
+
+    // ----------------------------------------------------------------------
+    // For Table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
     const Value* find(const std::string& key) const;
@@ -121,24 +133,32 @@ public:
     Value* setChild(const std::string& key, const Value& v);
     bool eraseChild(const std::string& key);
 
-    // For array value
+    // ----------------------------------------------------------------------
+    // For Array value
+
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
     const Value* find(size_t index) const;
     Value* find(size_t index);
     Value* push(const Value& v);
 
+    // ----------------------------------------------------------------------
+    // Others
+
     // Writer.
     void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
+
+    friend bool operator==(const Value& lhs, const Value& rhs);
+    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
+
+    // ----------------------------------------------------------------------
+    // Deprecated
 
     // Deprecated because of name confusion.
     // TODO(mayah): Mark as deprecated.
     Value* findSingle(const std::string& key) { return findChild(key); }
     const Value* findSingle(const std::string& key) const { return findChild(key); }
     Value* setSingle(const std::string& key, const Value& v) { return setChild(key, v); }
-
-    friend bool operator==(const Value& lhs, const Value& rhs);
-    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
 private:
     static const char* typeToString(Type);
@@ -1160,6 +1180,11 @@ inline double Value::asNumber() const
 
     failwith("type error: this value is ", typeToString(type_), " but number is requested");
     return 0.0;
+}
+
+inline std::time_t Value::as_time_t() const
+{
+    return std::chrono::system_clock::to_time_t(as<Time>());
 }
 
 inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
