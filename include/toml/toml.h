@@ -63,6 +63,11 @@ public:
         TABLE_TYPE,
     };
 
+    enum IndentMode {
+        INDENT_DISABLED = -1,
+        INDENT_ENABLED = 0
+    };
+
     Value() : type_(NULL_TYPE), null_(nullptr) {}
     Value(bool v) : type_(BOOL_TYPE), bool_(v) {}
     Value(int v) : type_(INT_TYPE), int_(v) {}
@@ -126,7 +131,9 @@ public:
     Value* push(const Value& v);
 
     // Writer.
-    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
+    string getIndent(int indent) const;
+
+    void write(std::ostream*, int indent = INDENT_DISABLED, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     // Deprecated because of name confusion.
@@ -1157,7 +1164,17 @@ inline double Value::asNumber() const
     return 0.0;
 }
 
-inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
+inline string Value::getIndent(int indent) const
+{
+    string result;
+
+    while (indent-- > 0)
+        result += "  ";
+
+    return result;
+}
+
+inline void Value::write(std::ostream* os, int indent, const std::string& keyPrefix) const
 {
     switch (type_) {
     case NULL_TYPE:
@@ -1190,7 +1207,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
         for (size_t i = 0; i < array_->size(); ++i) {
             if (i)
                 (*os) << ", ";
-            (*array_)[i].write(os, keyPrefix);
+            (*array_)[i].write(os, INDENT_DISABLED, keyPrefix);
         }
         (*os) << ']';
         break;
@@ -1200,8 +1217,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
-            (*os) << kv.first << " = ";
-            kv.second.write(os, keyPrefix);
+            (*os) << getIndent(indent) << kv.first << " = ";
+            kv.second.write(os, indent >= 0 ? indent + 1 : indent, keyPrefix);
             (*os) << '\n';
         }
         for (const auto& kv : *table_) {
@@ -1210,8 +1227,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                 if (!keyPrefix.empty())
                     key += ".";
                 key += kv.first;
-                (*os) << "\n[" << key << "]\n";
-                kv.second.write(os, key);
+                (*os) << "\n" << getIndent(indent) << "[" << key << "]\n";
+                kv.second.write(os, indent >= 0 ? indent + 1 : indent, key);
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
                 std::string key(keyPrefix);
@@ -1219,8 +1236,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                     key += ".";
                 key += kv.first;
                 for (const auto& v : kv.second.as<Array>()) {
-                    (*os) << "\n[[" << key << "]]\n";
-                    v.write(os, key);
+                    (*os) << "\n" << getIndent(indent) << "[[" << key << "]]\n";
+                    v.write(os, indent >= 0 ? indent + 1 : indent, key);
                 }
             }
         }
