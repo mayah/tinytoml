@@ -141,10 +141,18 @@ TEST(ValueTest, string)
 
 TEST(ValueTest, time)
 {
-    std::chrono::time_point<std::chrono::system_clock> t;
+    auto t = std::chrono::system_clock::now();
     toml::Value v1(t);
 
     EXPECT_TRUE(v1.is<toml::Time>());
+}
+
+TEST(ValueTest, time_as_time_t)
+{
+    auto t = std::chrono::system_clock::now();
+    toml::Value v(t);
+
+    EXPECT_EQ(std::chrono::system_clock::to_time_t(t), v.as_time_t());
 }
 
 TEST(ValueTest, bool_array)
@@ -442,4 +450,49 @@ TEST(ValueTest, keyParsing)
     v.set("0000.0000", 1);
     EXPECT_EQ(1, v.get<int>("0000.0000"));
     EXPECT_EQ(1, v.find("0000")->get<int>("0000"));
+}
+
+TEST(ValueTest, comparing)
+{
+    toml::Value n1, n2;
+    toml::Value b1(true), b2(false), b3(true);
+    toml::Value i1(1), i2(2), i3(1);
+    toml::Value d1(1.0), d2(2.0), d3(1.0);
+    toml::Value s1("foo"), s2("bar"), s3("foo");
+    toml::Value a1((toml::Array())), a2((toml::Array())), a3((toml::Array()));
+    a1.push(1);
+    a2.push(2);
+    a3.push(1);
+
+    toml::Value t1((toml::Table())), t2((toml::Table())), t3((toml::Table()));
+    t1.set("k1", "v1");
+    t2.set("k2", "v2");
+    t3.set("k1", "v1");
+
+    EXPECT_TRUE(n1 == n2);
+    EXPECT_TRUE(b1 == b3);
+    EXPECT_TRUE(i1 == i3);
+    EXPECT_TRUE(d1 == d3);
+    EXPECT_TRUE(s1 == s3);
+    EXPECT_TRUE(t1 == t3);
+
+    EXPECT_TRUE(b1 != b2);
+    EXPECT_TRUE(i1 != i2);
+    EXPECT_TRUE(d1 != d2);
+    EXPECT_TRUE(s1 != s2);
+    EXPECT_TRUE(t1 != t2);
+
+    EXPECT_TRUE(i1 != d1);
+}
+
+TEST(ValueTest, operatorBox)
+{
+    toml::Value v;
+    v["key"] = "value";
+    v["foo.bar"] = "foobar";
+    v.setChild("foo", "bar");
+
+    EXPECT_EQ("value", v.findChild("key")->as<std::string>());
+    EXPECT_EQ("foobar", v.findChild("foo.bar")->as<std::string>());
+    EXPECT_EQ("bar", v["foo"].as<std::string>());
 }

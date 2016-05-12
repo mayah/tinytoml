@@ -83,9 +83,9 @@ public:
     Value(Table&& v) : type_(TABLE_TYPE), table_(new Table(std::move(v))) {}
 
     Value(const Value& v);
-    Value(Value&& v);
+    Value(Value&& v) noexcept;
     Value& operator=(const Value& v);
-    Value& operator=(Value&& v);
+    Value& operator=(Value&& v) noexcept;
 
     // Someone might use a value like this:
     // toml::Value v = x->find("foo");
@@ -102,18 +102,32 @@ public:
     template<typename T> bool is() const;
     template<typename T> typename call_traits<T>::return_type as() const;
 
+    // ----------------------------------------------------------------------
+    // For integer/floating value
+
     // Returns true if the value is int or double.
     bool isNumber() const;
     // Returns number. Convert to double.
     double asNumber() const;
 
-    // For table value
+    // ----------------------------------------------------------------------
+    // For Time value
+
+    // Converts to time_t if the internal value is Time.
+    // We don't have as<std::time_t>(). Since time_t is basically signed long,
+    // it's something like a method to converting to (normal) integer.
+    std::time_t as_time_t() const;
+
+    // ----------------------------------------------------------------------
+    // For Table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
     const Value* find(const std::string& key) const;
     Value* find(const std::string& key);
     bool has(const std::string& key) const { return find(key) != nullptr; }
     bool erase(const std::string& key);
+
+    Value& operator[](const std::string& key);
 
     // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
     bool merge(const Value&);
@@ -125,18 +139,29 @@ public:
     Value* setChild(const std::string& key, Value && v);
     bool eraseChild(const std::string& key);
 
-    // For array value
+    // ----------------------------------------------------------------------
+    // For Array value
+
     template<typename T> typename call_traits<T>::return_type get(size_t index) const;
     const Value* find(size_t index) const;
     Value* find(size_t index);
     Value* push(const Value& v);
     Value* push(Value && v);
 
+    // ----------------------------------------------------------------------
+    // Others
+
     // Writer.
-    string getIndent(int indent) const;
+    std::string getIndent(int indent) const;
 
     void write(std::ostream*, int indent = INDENT_DISABLED, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
+
+    friend bool operator==(const Value& lhs, const Value& rhs);
+    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
+
+    // ----------------------------------------------------------------------
+    // Deprecated
 
     // Deprecated because of name confusion.
     // TODO(mayah): Mark as deprecated.
@@ -933,7 +958,7 @@ inline Value::Value(const Value& v) :
     }
 }
 
-inline Value::Value(Value&& v) :
+inline Value::Value(Value&& v) noexcept :
     type_(v.type_)
 {
     switch (v.type_) {
@@ -981,7 +1006,7 @@ inline Value& Value::operator=(const Value& v)
     return *this;
 }
 
-inline Value& Value::operator=(Value&& v)
+inline Value& Value::operator=(Value&& v) noexcept
 {
     if (this == &v)
         return *this;
@@ -1166,9 +1191,14 @@ inline double Value::asNumber() const
     return 0.0;
 }
 
-inline string Value::getIndent(int indent) const
+inline std::time_t Value::as_time_t() const
 {
-    string result;
+    return std::chrono::system_clock::to_time_t(as<Time>());
+}
+
+inline std::string Value::getIndent(int indent) const
+{
+    std::string result;
 
     while (indent-- > 0)
         result += "  ";
@@ -1255,6 +1285,36 @@ inline std::ostream& operator<<(std::ostream& os, const toml::Value& v)
 {
     v.write(&os);
     return os;
+}
+
+// static
+inline bool operator==(const Value& lhs, const Value& rhs)
+{
+    if (lhs.type() != rhs.type())
+        return false;
+
+    switch (lhs.type()) {
+    case Value::Type::NULL_TYPE:
+        return true;
+    case Value::Type::BOOL_TYPE:
+        return lhs.bool_ == rhs.bool_;
+    case Value::Type::INT_TYPE:
+        return lhs.int_ == rhs.int_;
+    case Value::Type::DOUBLE_TYPE:
+        return lhs.double_ == rhs.double_;
+    case Value::Type::STRING_TYPE:
+        return *lhs.string_ == *rhs.string_;
+    case Value::Type::TIME_TYPE:
+        return *lhs.time_ == *rhs.time_;
+    case Value::Type::ARRAY_TYPE:
+        return *lhs.array_ == *rhs.array_;
+    case Value::Type::TABLE_TYPE:
+        return *lhs.table_ == *rhs.table_;
+    default:
+        assert(false);
+        failwith("unknown type");
+        return false;
+    }
 }
 
 template<typename T>
@@ -1391,6 +1451,17 @@ inline bool Value::eraseChild(const std::string& key)
         failwith("type must be table to do erase(key).");
 
     return table_->erase(key) > 0;
+}
+
+inline Value& Value::operator[](const std::string& key)
+{
+    if (!valid())
+        *this = Value((Table()));
+
+    if (Value* v = findChild(key))
+        return *v;
+
+    return *setChild(key, Value());
 }
 
 template<typename T>
