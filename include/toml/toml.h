@@ -131,6 +131,7 @@ public:
     Value* findChild(const std::string& key);
     const Value* findChild(const std::string& key) const;
     Value* setChild(const std::string& key, const Value& v);
+    Value* setChild(const std::string& key, Value&& v);
     bool eraseChild(const std::string& key);
 
     // ----------------------------------------------------------------------
@@ -140,6 +141,7 @@ public:
     const Value* find(size_t index) const;
     Value* find(size_t index);
     Value* push(const Value& v);
+    Value* push(Value&& v);
 
     // ----------------------------------------------------------------------
     // Others
@@ -1386,6 +1388,18 @@ inline Value* Value::setChild(const std::string& key, const Value& v)
     return &(*table_)[key];
 }
 
+inline Value* Value::setChild(const std::string& key, Value&& v)
+{
+    if (!valid())
+        *this = Value((Table()));
+
+    if (!is<Table>())
+        failwith("type must be table to do set(key, v).");
+
+    (*table_)[key] = std::move(v);
+    return &(*table_)[key];
+}
+
 inline bool Value::erase(const std::string& key)
 {
     if (!is<Table>())
@@ -1467,6 +1481,17 @@ inline Value* Value::push(const Value& v)
         failwith("type must be array to do push(Value).");
 
     array_->push_back(v);
+    return &array_->back();
+}
+
+inline Value* Value::push(Value&& v)
+{
+    if (!valid())
+        *this = Value((Array()));
+    else if (!is<Array>())
+        failwith("type must be array to do push(Value).");
+
+    array_->push_back(std::move(v));
     return &array_->back();
 }
 
