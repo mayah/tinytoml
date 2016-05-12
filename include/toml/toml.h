@@ -230,7 +230,7 @@ public:
 
     TokenType type() const { return type_; }
     const std::string& strValue() const { return strValue_; }
-    bool boolValue() const { return intValue_; }
+    bool boolValue() const { return intValue_ != 0; }
     std::int64_t intValue() const { return intValue_; }
     double doubleValue() const { return doubleValue_; }
     std::chrono::system_clock::time_point timeValue() const { return timeValue_; }
