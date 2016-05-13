@@ -154,7 +154,7 @@ public:
     // Writer.
     static std::string getIndent(int indent);
 
-    void write(std::ostream*, int indent = INDENT_DISABLED, const std::string& keyPrefix = std::string()) const;
+    void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = INDENT_DISABLED) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     friend bool operator==(const Value& lhs, const Value& rhs);
@@ -1201,7 +1201,7 @@ inline std::string Value::getIndent(int indent)
     return std::string(indent, ' ');
 }
 
-inline void Value::write(std::ostream* os, int indent, const std::string& keyPrefix) const
+inline void Value::write(std::ostream* os, const std::string& keyPrefix, int indent) const
 {
     switch (type_) {
     case NULL_TYPE:
@@ -1234,7 +1234,7 @@ inline void Value::write(std::ostream* os, int indent, const std::string& keyPre
         for (size_t i = 0; i < array_->size(); ++i) {
             if (i)
                 (*os) << ", ";
-            (*array_)[i].write(os, INDENT_DISABLED, keyPrefix);
+            (*array_)[i].write(os, keyPrefix, INDENT_DISABLED);
         }
         (*os) << ']';
         break;
@@ -1245,7 +1245,7 @@ inline void Value::write(std::ostream* os, int indent, const std::string& keyPre
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
             (*os) << getIndent(indent) << kv.first << " = ";
-            kv.second.write(os, indent >= 0 ? indent + 1 : indent, keyPrefix);
+            kv.second.write(os, keyPrefix, indent >= 0 ? indent + 1 : indent);
             (*os) << '\n';
         }
         for (const auto& kv : *table_) {
@@ -1255,7 +1255,7 @@ inline void Value::write(std::ostream* os, int indent, const std::string& keyPre
                     key += ".";
                 key += kv.first;
                 (*os) << "\n" << getIndent(indent) << "[" << key << "]\n";
-                kv.second.write(os, indent >= 0 ? indent + 1 : indent, key);
+                kv.second.write(os, key, indent >= 0 ? indent + 1 : indent);
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
                 std::string key(keyPrefix);
@@ -1264,7 +1264,7 @@ inline void Value::write(std::ostream* os, int indent, const std::string& keyPre
                 key += kv.first;
                 for (const auto& v : kv.second.as<Array>()) {
                     (*os) << "\n" << getIndent(indent) << "[[" << key << "]]\n";
-                    v.write(os, indent >= 0 ? indent + 1 : indent, key);
+                    v.write(os, key, indent >= 0 ? indent + 1 : indent);
                 }
             }
         }
