@@ -152,7 +152,7 @@ public:
     // Others
 
     // Writer.
-    std::string getIndent(int indent) const;
+    static std::string getIndent(int indent);
 
     void write(std::ostream*, int indent = INDENT_DISABLED, const std::string& keyPrefix = std::string()) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
@@ -1196,14 +1196,9 @@ inline std::time_t Value::as_time_t() const
     return std::chrono::system_clock::to_time_t(as<Time>());
 }
 
-inline std::string Value::getIndent(int indent) const
+inline std::string Value::getIndent(int indent)
 {
-    std::string result;
-
-    while (indent-- > 0)
-        result += "  ";
-
-    return result;
+    return std::string(indent, ' ');
 }
 
 inline void Value::write(std::ostream* os, int indent, const std::string& keyPrefix) const
