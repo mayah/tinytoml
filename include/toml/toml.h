@@ -50,6 +50,29 @@ template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {
 // This is because a fresh vector is made.
 template<typename T> struct call_traits<std::vector<T>> : public internal::call_traits_value<std::vector<T>> {};
 
+// Formatting flags
+enum FormatFlag {
+    FORMAT_NONE = 0,
+    FORMAT_INDENT = 1
+};
+
+// Formatted value to be used when writing to streams
+class FormattedValue
+{
+public:
+    FormattedValue(const Value& value, FormatFlag flags)
+        : value_(value)
+        , flags_(flags)
+    {}
+
+    void write(std::ostream*) const;
+    friend std::ostream& operator<<(std::ostream&, const FormattedValue&);
+
+private:
+    const Value& value_;
+    FormatFlag flags_;
+};
+
 class Value {
 public:
     enum Type {
@@ -61,11 +84,6 @@ public:
         TIME_TYPE,
         ARRAY_TYPE,
         TABLE_TYPE,
-    };
-
-    enum IndentMode {
-        INDENT_DISABLED = -1,
-        INDENT_ENABLED = 0
     };
 
     Value() : type_(NULL_TYPE), null_(nullptr) {}
@@ -154,7 +172,7 @@ public:
     // Writer.
     static std::string getIndent(int indent);
 
-    void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = INDENT_DISABLED) const;
+    void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = -1) const;
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     friend bool operator==(const Value& lhs, const Value& rhs);
@@ -1198,6 +1216,9 @@ inline std::time_t Value::as_time_t() const
 
 inline std::string Value::getIndent(int indent)
 {
+    if (indent <= 0)
+        return std::string();
+
     return std::string(indent, ' ');
 }
 
@@ -1234,7 +1255,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
         for (size_t i = 0; i < array_->size(); ++i) {
             if (i)
                 (*os) << ", ";
-            (*array_)[i].write(os, keyPrefix, INDENT_DISABLED);
+            (*array_)[i].write(os, keyPrefix, -1);
         }
         (*os) << ']';
         break;
@@ -1275,8 +1296,29 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
     }
 }
 
+inline void FormattedValue::write(std::ostream* os) const
+{
+    int indent = flags_ & FORMAT_INDENT ? 0 : -1;
+
+    value_.write(os, std::string(), indent);
+}
+
+
+// static
+inline FormatFlag operator|(FormatFlag lhs, FormatFlag rhs)
+{
+    return static_cast<FormatFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));
+}
+
 // static
 inline std::ostream& operator<<(std::ostream& os, const toml::Value& v)
+{
+    v.write(&os);
+    return os;
+}
+
+// static
+inline std::ostream& operator<<(std::ostream& os, const toml::FormattedValue& v)
 {
     v.write(&os);
     return os;
