@@ -56,23 +56,6 @@ enum FormatFlag {
     FORMAT_INDENT = 1
 };
 
-// Formatted value to be used when writing to streams
-class FormattedValue
-{
-public:
-    FormattedValue(const Value& value, FormatFlag flags)
-        : value_(value)
-        , flags_(flags)
-    {}
-
-    void write(std::ostream*) const;
-    friend std::ostream& operator<<(std::ostream&, const FormattedValue&);
-
-private:
-    const Value& value_;
-    FormatFlag flags_;
-};
-
 class Value {
 public:
     enum Type {
@@ -173,6 +156,8 @@ public:
     static std::string getIndent(int indent);
 
     void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = -1) const;
+    void writeFormatted(std::ostream*, FormatFlag flags) const;
+
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     friend bool operator==(const Value& lhs, const Value& rhs);
@@ -1296,11 +1281,11 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
     }
 }
 
-inline void FormattedValue::write(std::ostream* os) const
+inline void Value::writeFormatted(std::ostream* os, FormatFlag flags) const
 {
-    int indent = flags_ & FORMAT_INDENT ? 0 : -1;
+    int indent = flags & FORMAT_INDENT ? 0 : -1;
 
-    value_.write(os, std::string(), indent);
+    write(os, std::string(), indent);
 }
 
 
@@ -1312,13 +1297,6 @@ inline FormatFlag operator|(FormatFlag lhs, FormatFlag rhs)
 
 // static
 inline std::ostream& operator<<(std::ostream& os, const toml::Value& v)
-{
-    v.write(&os);
-    return os;
-}
-
-// static
-inline std::ostream& operator<<(std::ostream& os, const toml::FormattedValue& v)
 {
     v.write(&os);
     return os;
