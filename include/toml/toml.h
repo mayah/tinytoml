@@ -252,25 +252,25 @@ enum class TokenType {
 class Token {
 public:
     explicit Token(TokenType type) : type_(type) {}
-    Token(TokenType type, const std::string& v) : type_(type), strValue_(v) {}
-    Token(TokenType type, bool v) : type_(type), intValue_(v) {}
-    Token(TokenType type, std::int64_t v) : type_(type), intValue_(v) {}
-    Token(TokenType type, double v) : type_(type), doubleValue_(v) {}
-    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), timeValue_(tp) {}
+    Token(TokenType type, const std::string& v) : type_(type), str_value_(v) {}
+    Token(TokenType type, bool v) : type_(type), int_value_(v) {}
+    Token(TokenType type, std::int64_t v) : type_(type), int_value_(v) {}
+    Token(TokenType type, double v) : type_(type), double_value_(v) {}
+    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), time_value_(tp) {}
 
     TokenType type() const { return type_; }
-    const std::string& strValue() const { return strValue_; }
-    bool boolValue() const { return intValue_ != 0; }
-    std::int64_t intValue() const { return intValue_; }
-    double doubleValue() const { return doubleValue_; }
-    std::chrono::system_clock::time_point timeValue() const { return timeValue_; }
+    const std::string& strValue() const { return str_value_; }
+    bool boolValue() const { return int_value_ != 0; }
+    std::int64_t intValue() const { return int_value_; }
+    double doubleValue() const { return double_value_; }
+    std::chrono::system_clock::time_point timeValue() const { return time_value_; }
 
 private:
     TokenType type_;
-    std::string strValue_;
-    std::int64_t intValue_;
-    double doubleValue_;
-    std::chrono::system_clock::time_point timeValue_;
+    std::string str_value_;
+    std::int64_t int_value_;
+    double double_value_;
+    std::chrono::system_clock::time_point time_value_;
 };
 
 class Lexer {
