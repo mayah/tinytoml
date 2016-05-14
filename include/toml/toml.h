@@ -50,6 +50,12 @@ template<> struct call_traits<Table> : public internal::call_traits_ref<Table> {
 // This is because a fresh vector is made.
 template<typename T> struct call_traits<std::vector<T>> : public internal::call_traits_value<std::vector<T>> {};
 
+// Formatting flags
+enum FormatFlag {
+    FORMAT_NONE = 0,
+    FORMAT_INDENT = 1
+};
+
 class Value {
 public:
     enum Type {
@@ -147,7 +153,11 @@ public:
     // Others
 
     // Writer.
-    void write(std::ostream*, const std::string& keyPrefix = std::string()) const;
+    static std::string getIndent(int indent);
+
+    void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = -1) const;
+    void writeFormatted(std::ostream*, FormatFlag flags) const;
+
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
     friend bool operator==(const Value& lhs, const Value& rhs);
@@ -1189,7 +1199,15 @@ inline std::time_t Value::as_time_t() const
     return std::chrono::system_clock::to_time_t(as<Time>());
 }
 
-inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
+inline std::string Value::getIndent(int indent)
+{
+    if (indent <= 0)
+        return std::string();
+
+    return std::string(indent, ' ');
+}
+
+inline void Value::write(std::ostream* os, const std::string& keyPrefix, int indent) const
 {
     switch (type_) {
     case NULL_TYPE:
@@ -1222,7 +1240,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
         for (size_t i = 0; i < array_->size(); ++i) {
             if (i)
                 (*os) << ", ";
-            (*array_)[i].write(os, keyPrefix);
+            (*array_)[i].write(os, keyPrefix, -1);
         }
         (*os) << ']';
         break;
@@ -1232,8 +1250,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
-            (*os) << kv.first << " = ";
-            kv.second.write(os, keyPrefix);
+            (*os) << getIndent(indent) << kv.first << " = ";
+            kv.second.write(os, keyPrefix, indent >= 0 ? indent + 1 : indent);
             (*os) << '\n';
         }
         for (const auto& kv : *table_) {
@@ -1242,8 +1260,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                 if (!keyPrefix.empty())
                     key += ".";
                 key += kv.first;
-                (*os) << "\n[" << key << "]\n";
-                kv.second.write(os, key);
+                (*os) << "\n" << getIndent(indent) << "[" << key << "]\n";
+                kv.second.write(os, key, indent >= 0 ? indent + 1 : indent);
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
                 std::string key(keyPrefix);
@@ -1251,8 +1269,8 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
                     key += ".";
                 key += kv.first;
                 for (const auto& v : kv.second.as<Array>()) {
-                    (*os) << "\n[[" << key << "]]\n";
-                    v.write(os, key);
+                    (*os) << "\n" << getIndent(indent) << "[[" << key << "]]\n";
+                    v.write(os, key, indent >= 0 ? indent + 1 : indent);
                 }
             }
         }
@@ -1261,6 +1279,20 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix) const
         failwith("writing unknown type");
         break;
     }
+}
+
+inline void Value::writeFormatted(std::ostream* os, FormatFlag flags) const
+{
+    int indent = flags & FORMAT_INDENT ? 0 : -1;
+
+    write(os, std::string(), indent);
+}
+
+
+// static
+inline FormatFlag operator|(FormatFlag lhs, FormatFlag rhs)
+{
+    return static_cast<FormatFlag>(static_cast<int>(lhs) | static_cast<int>(rhs));
 }
 
 // static
