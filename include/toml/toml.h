@@ -153,7 +153,7 @@ public:
     // Others
 
     // Writer.
-    static std::string getIndent(int indent);
+    static std::string spaces(int num);
 
     void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = -1) const;
     void writeFormatted(std::ostream*, FormatFlag flags) const;
@@ -1199,12 +1199,12 @@ inline std::time_t Value::as_time_t() const
     return std::chrono::system_clock::to_time_t(as<Time>());
 }
 
-inline std::string Value::getIndent(int indent)
+inline std::string Value::spaces(int num)
 {
-    if (indent <= 0)
+    if (num <= 0)
         return std::string();
 
-    return std::string(indent, ' ');
+    return std::string(num, ' ');
 }
 
 inline void Value::write(std::ostream* os, const std::string& keyPrefix, int indent) const
@@ -1250,7 +1250,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
-            (*os) << getIndent(indent) << kv.first << " = ";
+            (*os) << spaces(indent) << kv.first << " = ";
             kv.second.write(os, keyPrefix, indent >= 0 ? indent + 1 : indent);
             (*os) << '\n';
         }
@@ -1260,7 +1260,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                 if (!keyPrefix.empty())
                     key += ".";
                 key += kv.first;
-                (*os) << "\n" << getIndent(indent) << "[" << key << "]\n";
+                (*os) << "\n" << spaces(indent) << "[" << key << "]\n";
                 kv.second.write(os, key, indent >= 0 ? indent + 1 : indent);
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
@@ -1269,7 +1269,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                     key += ".";
                 key += kv.first;
                 for (const auto& v : kv.second.as<Array>()) {
-                    (*os) << "\n" << getIndent(indent) << "[[" << key << "]]\n";
+                    (*os) << "\n" << spaces(indent) << "[[" << key << "]]\n";
                     v.write(os, key, indent >= 0 ? indent + 1 : indent);
                 }
             }
