@@ -144,9 +144,11 @@ public:
     // When the same key exists, it will be overwritten.
     bool merge(const Value&);
 
-    // findChild finds a value with |key|. It searches only children.
+    // Finds a value with |key|. It searches only children.
     Value* findChild(const std::string& key);
     const Value* findChild(const std::string& key) const;
+    // Sets a value, and returns the pointer to the created value.
+    // When the value having the same key exists, it will be overwritten.
     Value* setChild(const std::string& key, const Value& v);
     Value* setChild(const std::string& key, Value&& v);
     bool eraseChild(const std::string& key);
