@@ -171,15 +171,6 @@ public:
 
     friend std::ostream& operator<<(std::ostream&, const Value&);
 
-    // ----------------------------------------------------------------------
-    // Deprecated
-
-    // Deprecated because of name confusion.
-    // TODO(mayah): Mark as deprecated.
-    Value* findSingle(const std::string& key) { return findChild(key); }
-    const Value* findSingle(const std::string& key) const { return findChild(key); }
-    Value* setSingle(const std::string& key, const Value& v) { return setChild(key, v); }
-
 private:
     static const char* typeToString(Type);
 
