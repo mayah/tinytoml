@@ -88,13 +88,18 @@ public:
     Value& operator=(const Value& v);
     Value& operator=(Value&& v) noexcept;
 
+    // Guards from unexpected Value construction.
     // Someone might use a value like this:
-    // toml::Value v = x->find("foo");
+    //   toml::Value v = x->find("foo");
     // But this is wrong. Without this constructor,
     // value will be unexpectedly initialized with bool.
     Value(const void* v) = delete;
     ~Value();
 
+    // Retruns Value size.
+    // 0 for invalid value.
+    // The number of inner elements for array or table.
+    // 1 for other types.
     size_t size() const;
     bool empty() const;
     Type type() const { return type_; }
@@ -102,6 +107,9 @@ public:
     bool valid() const { return type_ != NULL_TYPE; }
     template<typename T> bool is() const;
     template<typename T> typename call_traits<T>::return_type as() const;
+
+    friend bool operator==(const Value& lhs, const Value& rhs);
+    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
     // ----------------------------------------------------------------------
     // For integer/floating value
@@ -123,6 +131,8 @@ public:
     // For Table value
     template<typename T> typename call_traits<T>::return_type get(const std::string&) const;
     Value* set(const std::string& key, const Value& v);
+    // Finds a Value with |key|. |key| can contain '.'
+    // Note: if you would like to find a child value only, you need to use findChild.
     const Value* find(const std::string& key) const;
     Value* find(const std::string& key);
     bool has(const std::string& key) const { return find(key) != nullptr; }
@@ -131,9 +141,10 @@ public:
     Value& operator[](const std::string& key);
 
     // Merge table. Returns true if succeeded. Otherwise, |this| might be corrupted.
+    // When the same key exists, it will be overwritten.
     bool merge(const Value&);
 
-    // findChild finds a value with having |key|. We don't have |key|.
+    // findChild finds a value with |key|. It searches only children.
     Value* findChild(const std::string& key);
     const Value* findChild(const std::string& key) const;
     Value* setChild(const std::string& key, const Value& v);
@@ -159,9 +170,6 @@ public:
     void writeFormatted(std::ostream*, FormatFlag flags) const;
 
     friend std::ostream& operator<<(std::ostream&, const Value&);
-
-    friend bool operator==(const Value& lhs, const Value& rhs);
-    friend bool operator!=(const Value& lhs, const Value& rhs) { return !(lhs == rhs); }
 
     // ----------------------------------------------------------------------
     // Deprecated
