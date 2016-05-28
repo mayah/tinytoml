@@ -215,12 +215,15 @@ ParseResult parse(std::istream&);
 // Declarations for Implementations
 //   You don't need to understand the below to use this library.
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 // Windows does not have timegm but have _mkgmtime.
 inline time_t timegm(std::tm* timeptr)
 {
     return _mkgmtime(timeptr);
 }
+#endif
+#if defined(_MSC_VER)
+// Visual studio doesn't define gmtime_r, but mingw does
 inline std::tm* gmtime_r(const time_t* timer, std::tm* result)
 {
     gmtime_s(result, timer);
