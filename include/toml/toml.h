@@ -828,7 +828,8 @@ inline Token Lexer::parseAsTime(const std::string& str)
     t.tm_year = YYYY - 1900;
     auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
     ss -= static_cast<int>(ss);
-    tp += std::chrono::microseconds(static_cast<int>(std::round(ss * 1000000)));
+    // TODO(mayah): workaround GCC 4.9.3 on cygwin does not have std::round, but round().
+    tp += std::chrono::microseconds(static_cast<std::int64_t>(round(ss * 1000000)));
 
     if (s[n] == '\0')
         return Token(TokenType::TIME, tp);
