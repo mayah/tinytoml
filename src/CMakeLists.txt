@@ -48,5 +48,6 @@ add_toml_test(lexer)
 add_toml_test(parser)
 add_toml_test(parser_complex)
 add_toml_test(parser_failure)
+add_toml_test(writer)
 
 add_toml_link_test(link)
