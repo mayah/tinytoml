@@ -49,5 +49,6 @@ add_toml_test(parser)
 add_toml_test(parser_complex)
 add_toml_test(parser_failure)
 add_toml_test(writer)
+add_toml_test(builder)
 
 add_toml_link_test(link)
