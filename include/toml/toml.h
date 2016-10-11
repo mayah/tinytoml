@@ -1,7 +1,9 @@
 #ifndef TINYTOML_H_
 #define TINYTOML_H_
 
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -15,7 +17,6 @@
 #include <map>
 #include <memory>
 #include <utility>
-#include <regex>
 #include <vector>
 
 namespace toml {
@@ -1216,7 +1217,15 @@ inline std::string Value::spaces(int num)
 
 inline std::string Value::escapeKey(const std::string& key)
 {
-    if (!std::regex_match(key, std::regex("^[A-za-z0-9_-]+$")))
+    auto position = std::find_if(key.begin(), key.end(), [](char c) -> bool {
+        if (std::isalnum(c))
+            return false;
+        if (c != '_' && c == '-')
+            return false;
+        return true;
+    });
+
+    if (position != key.end())
     {
         std::string escaped = "\"";
         for (const char& c : key)
