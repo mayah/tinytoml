@@ -1,3 +1,5 @@
+#ifndef TOML_TEST_BUILD_H
+#define TOML_TEST_BUILD_H
 
 // Include me last in your _test.cc if you need me.
 
@@ -379,3 +381,6 @@ toml::Value build_table_03(void)
 
     return root;
 }
+
+#endif // TOML_TEST_BUILD_H
+
