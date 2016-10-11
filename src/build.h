@@ -223,14 +223,15 @@ toml::Value build_float_01(void)
     top->setChild("flt5", 1e6);
     top->setChild("flt6", -2e-2);
 
-    //XXX: Too low? Both writer & parser sets -0 and 0 respectively.
+    // XXX: Too low? Both writer & parser sets -0 and 0 respectively.
     top->setChild("flt7", -6.626e-34);
 
     // XXX: Format: 9_224_617.445_991_228_313
     top->setChild("flt8", 9224617.445991228313);
-    //XXX: Too high? Results in inf for value type double (parser is able. Hmm)
     // XXX: Format: 1e1_000
-    top->setChild("flt9", 1e+1000);
+    // TODO: Express 1e+1000 - sat to zero for now until someone uses this (no test does)
+    // XXX: Too high? Results in inf for value type double (parser is able. Hmm)
+    top->setChild("flt9", 0.0);
 
     return root;
 }
