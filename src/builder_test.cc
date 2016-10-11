@@ -21,9 +21,9 @@ void compare_content_parsed_from_file (const char *name, toml::Value& value)
     bool result = (parsed == value);
     EXPECT_TRUE(result);
 
-    if (!result)
+    if (result == false)
     {
-         std::cout << "VALUE CONTENTS:" << std::endl;
+        std::cout << "VALUE CONTENTS:" << std::endl;
         value.write(&std::cout);
         std::cout << "FILE CONTENTS:" << std::endl;
         parsed.write(&std::cout);
