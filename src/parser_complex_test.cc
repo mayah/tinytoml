@@ -25,6 +25,22 @@ toml::Value parse(const string& name)
     return v;
 }
 
+std::chrono::system_clock::time_point makeTimePoint(int year, int month, int mday, int hour, int min, int sec, int usec)
+{
+    std::tm t;
+    t.tm_year = year - 1900;
+    t.tm_mon = month - 1;
+    t.tm_mday = mday;
+    t.tm_hour = hour;
+    t.tm_min = min;
+    t.tm_sec = sec;
+    t.tm_isdst = false;
+    auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
+    tp += std::chrono::microseconds(usec);
+
+    return tp;
+}
+
 } // namespace anonymous
 
 TEST(ParserComplexTest, boolean)
@@ -89,9 +105,12 @@ TEST(ParserComplexTest, string)
 
 TEST(ParserComplexTest, datetime)
 {
-    parse("datetime-01");
+    toml::Value v = parse("datetime-01");
 
-    // TODO(mayah): Write value test.
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 0), v.get<toml::Time>("date1"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 0), v.get<toml::Time>("date2"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 999999), v.get<toml::Time>("date3"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 0, 0, 0, 0), v.get<toml::Time>("date4"));
 }
 
 TEST(ParserComplexTest, array)
