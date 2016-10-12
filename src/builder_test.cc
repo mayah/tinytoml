@@ -8,7 +8,7 @@
 
 using namespace std;
 
-void compare_content_parsed_from_file (const char *name, toml::Value& value)
+void compare_content_parsed_from_file(const char *name, toml::Value& value)
 {
     string filepath = string(TESTCASE_DIR) + "/success/" + name + ".toml";;
     ifstream file(filepath, ifstream::in);
