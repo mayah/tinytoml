@@ -1225,11 +1225,9 @@ inline std::string Value::escapeKey(const std::string& key)
         return true;
     });
 
-    if (position != key.end())
-    {
+    if (position != key.end()) {
         std::string escaped = "\"";
-        for (const char& c : key)
-        {
+        for (const char& c : key) {
             if (c == '\\' || c  == '"')
                 escaped += '\\';
             escaped += c;
