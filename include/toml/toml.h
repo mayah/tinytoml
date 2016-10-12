@@ -1,7 +1,9 @@
 #ifndef TINYTOML_H_
 #define TINYTOML_H_
 
+#include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -167,6 +169,7 @@ public:
 
     // Writer.
     static std::string spaces(int num);
+    static std::string escapeKey(const std::string& key);
 
     void write(std::ostream*, const std::string& keyPrefix = std::string(), int indent = -1) const;
     void writeFormatted(std::ostream*, FormatFlag flags) const;
@@ -1212,6 +1215,31 @@ inline std::string Value::spaces(int num)
     return std::string(num, ' ');
 }
 
+inline std::string Value::escapeKey(const std::string& key)
+{
+    auto position = std::find_if(key.begin(), key.end(), [](char c) -> bool {
+        if (std::isalnum(c))
+            return false;
+        if (c != '_' && c == '-')
+            return false;
+        return true;
+    });
+
+    if (position != key.end()) {
+        std::string escaped = "\"";
+        for (const char& c : key) {
+            if (c == '\\' || c  == '"')
+                escaped += '\\';
+            escaped += c;
+        }
+        escaped += "\"";
+
+        return escaped;
+    }
+
+    return key;
+}
+
 inline void Value::write(std::ostream* os, const std::string& keyPrefix, int indent) const
 {
     switch (type_) {
@@ -1255,7 +1283,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
-            (*os) << spaces(indent) << kv.first << " = ";
+            (*os) << spaces(indent) << escapeKey(kv.first) << " = ";
             kv.second.write(os, keyPrefix, indent >= 0 ? indent + 1 : indent);
             (*os) << '\n';
         }
@@ -1264,7 +1292,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                 std::string key(keyPrefix);
                 if (!keyPrefix.empty())
                     key += ".";
-                key += kv.first;
+                key += escapeKey(kv.first);
                 (*os) << "\n" << spaces(indent) << "[" << key << "]\n";
                 kv.second.write(os, key, indent >= 0 ? indent + 1 : indent);
             }
@@ -1272,7 +1300,7 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                 std::string key(keyPrefix);
                 if (!keyPrefix.empty())
                     key += ".";
-                key += kv.first;
+                key += escapeKey(kv.first);
                 for (const auto& v : kv.second.as<Array>()) {
                     (*os) << "\n" << spaces(indent) << "[[" << key << "]]\n";
                     v.write(os, key, indent >= 0 ? indent + 1 : indent);
