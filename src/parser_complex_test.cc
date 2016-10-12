@@ -103,7 +103,7 @@ TEST(ParserComplexTest, string)
     EXPECT_EQ("The first newline is\ntrimmed in raw strings.\n   All other whitespace\n   is preserved.\n", v.get<string>("lines"));
 }
 
-TEST(ParserComplexTest, datetime)
+TEST(ParserComplexTest, datetime1)
 {
     toml::Value v = parse("datetime-01");
 
@@ -111,6 +111,19 @@ TEST(ParserComplexTest, datetime)
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 0), v.get<toml::Time>("date2"));
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 999999), v.get<toml::Time>("date3"));
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 0, 0, 0, 0), v.get<toml::Time>("date4"));
+}
+
+TEST(ParserComplexTest, datetime2)
+{
+    toml::Value v = parse("datetime-02");
+
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 0), v.get<toml::Time>("date0"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 100000), v.get<toml::Time>("date1"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 120000), v.get<toml::Time>("date2"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123000), v.get<toml::Time>("date3"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123400), v.get<toml::Time>("date4"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123450), v.get<toml::Time>("date5"));
+    EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123456), v.get<toml::Time>("date6"));
 }
 
 TEST(ParserComplexTest, array)
