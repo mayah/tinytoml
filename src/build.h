@@ -3,7 +3,7 @@
 
 // Include me last in your _test.cc if you need me.
 
-toml::Value build_array_01(void)
+inline toml::Value build_array_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top= &root;
@@ -70,7 +70,7 @@ toml::Value build_array_01(void)
     return root;
 }
 
-toml::Value build_array_table_01(void)
+inline toml::Value build_array_table_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -111,7 +111,7 @@ toml::Value build_array_table_01(void)
     return root;
 }
 
-toml::Value build_array_table_02(void)
+inline toml::Value build_array_table_02(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -136,7 +136,7 @@ toml::Value build_array_table_02(void)
     return root;
 }
 
-toml::Value build_boolean_01(void)
+inline toml::Value build_boolean_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -149,7 +149,7 @@ toml::Value build_boolean_01(void)
     return root;
 }
 
-toml::Value build_datetime_01(void)
+inline toml::Value build_datetime_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -210,7 +210,7 @@ toml::Value build_datetime_01(void)
     return root;
 }
 
-toml::Value build_float_01(void)
+inline toml::Value build_float_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -236,7 +236,7 @@ toml::Value build_float_01(void)
     return root;
 }
 
-toml::Value build_inlinetable_01(void)
+inline toml::Value build_inlinetable_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -258,7 +258,7 @@ toml::Value build_inlinetable_01(void)
     return root;
 }
 
-toml::Value build_integer_01(void)
+inline toml::Value build_integer_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -277,7 +277,7 @@ toml::Value build_integer_01(void)
     return root;
 }
 
-toml::Value build_string_01(void)
+inline toml::Value build_string_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -307,7 +307,7 @@ toml::Value build_string_01(void)
     return root;
 }
 
-toml::Value build_table_01(void)
+inline toml::Value build_table_01(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -325,7 +325,7 @@ toml::Value build_table_01(void)
     return root;
 }
 
-toml::Value build_table_02(void)
+inline toml::Value build_table_02(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
@@ -358,7 +358,7 @@ toml::Value build_table_02(void)
     return root;
 }
 
-toml::Value build_table_03(void)
+inline toml::Value build_table_03(void)
 {
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
