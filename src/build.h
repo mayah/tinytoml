@@ -171,7 +171,7 @@ inline toml::Value build_datetime_01(void)
         std::tm t;
         t.tm_sec = 0;
         t.tm_min = 32;
-        t.tm_hour = 0;
+        t.tm_hour = 7;
         t.tm_mday = 27;
         t.tm_mon = 5 - 1;
         t.tm_year = 1979 - 1900;
@@ -185,11 +185,12 @@ inline toml::Value build_datetime_01(void)
         std::tm t;
         t.tm_sec = 0;
         t.tm_min = 32;
-        t.tm_hour = 0;
+        t.tm_hour = 7;
         t.tm_mday = 27;
         t.tm_mon = 5 - 1;
         t.tm_year = 1979 - 1900;
         auto tp = std::chrono::system_clock::from_time_t(timegm(&t));
+        tp += std::chrono::microseconds(999999);
 
         top->setChild("date3", tp);
     }
@@ -384,4 +385,3 @@ inline toml::Value build_table_03(void)
 }
 
 #endif // TOML_TEST_BUILD_H
-

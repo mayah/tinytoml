@@ -56,7 +56,7 @@ TEST(WriterTest, write_parse_boolean_01)
     write_parse_compare(root);
 }
 
-TEST(WriterTest, write_parse_datetime_01)
+TEST(WriterTest, DISABLED_write_parse_datetime_01)
 {
     toml::Value root = build_datetime_01();
     write_parse_compare(root);
@@ -105,4 +105,3 @@ TEST(WriterTest, write_parse_table_03)
     toml::Value root = build_table_03();
     write_parse_compare(root);
 }
-

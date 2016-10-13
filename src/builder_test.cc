@@ -49,7 +49,7 @@ TEST(BuildTest, build_parse_boolean_01)
     compare_content_parsed_from_file("boolean-01", root);
 }
 
-TEST(BuildTest, DISABLED_build_parse_datetime_01)
+TEST(BuildTest, build_parse_datetime_01)
 {
     toml::Value root = build_datetime_01();
     compare_content_parsed_from_file("datetime-01", root);
