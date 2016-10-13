@@ -8,27 +8,22 @@
 
 using namespace std;
 
+namespace {
+
 void compare_content_parsed_from_file(const char *name, toml::Value& value)
 {
     string filepath = string(TESTCASE_DIR) + "/success/" + name + ".toml";;
     ifstream file(filepath, ifstream::in);
-    ASSERT_TRUE (file.is_open());
+    ASSERT_TRUE(file.is_open());
 
     toml::ParseResult pr = toml::parse(file);
     ASSERT_TRUE(pr.valid()) << pr.errorReason << file.rdbuf();
 
     toml::Value& parsed = pr.value;
-    bool result = (parsed == value);
-    EXPECT_TRUE(result);
-
-    if (result == false)
-    {
-        std::cout << "VALUE CONTENTS:" << std::endl;
-        value.write(&std::cout);
-        std::cout << "FILE CONTENTS:" << std::endl;
-        parsed.write(&std::cout);
-    }
+    EXPECT_EQ(parsed, value) << "parsed=" << parsed << " value=" << value;
 }
+
+} // namespace anonymous
 
 TEST(BuildTest, build_parse_array_01)
 {
