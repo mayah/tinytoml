@@ -8,7 +8,9 @@
 
 using namespace std;
 
-void write_parse_compare (toml::Value& value)
+namespace {
+
+void write_parse_compare(toml::Value& value)
 {
     // Write value to stringstream
     stringstream write_ss;
@@ -20,17 +22,10 @@ void write_parse_compare (toml::Value& value)
 
     // Compare parsed with value
     toml::Value& parsed = pr.value;
-    bool result = (parsed == value);
-    EXPECT_TRUE(result);
-
-    if (result == false)
-    {
-        std::cout << "VALUE CONTENTS:" << std::endl;
-        value.write(&std::cout);
-        std::cout << "PARSED CONTENTS:" << std::endl;
-        parsed.write(&std::cout);
-    }
+    EXPECT_EQ(parsed, value) << "parsed=" << parsed << " value=" << value;
 }
+
+} // namespace anonymous
 
 TEST(WriterTest, write_parse_array_01)
 {
@@ -64,11 +59,11 @@ TEST(WriterTest, DISABLED_write_parse_datetime_01)
 
 // XXX: flt8 generates a comparison error (large floating point...)
 // TODO: Uncomment if fix-able.
-//TEST(WriterTest, write_parse_float_01)
-//{
-//    toml::Value root = build_float_01();
-//    write_parse_compare(root);
-//}
+TEST(WriterTest, DISABLED_write_parse_float_01)
+{
+    toml::Value root = build_float_01();
+    write_parse_compare(root);
+}
 
 TEST(WriterTest, write_parse_inlinetable_01)
 {
