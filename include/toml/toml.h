@@ -1199,7 +1199,6 @@ inline double Value::asNumber() const
         return as<double>();
 
     failwith("type error: this value is ", typeToString(type_), " but number is requested");
-    return 0.0;
 }
 
 inline std::time_t Value::as_time_t() const
@@ -1358,9 +1357,7 @@ inline bool operator==(const Value& lhs, const Value& rhs)
     case Value::Type::TABLE_TYPE:
         return *lhs.table_ == *rhs.table_;
     default:
-        assert(false);
         failwith("unknown type");
-        return false;
     }
 }
 
@@ -1373,6 +1370,7 @@ inline typename call_traits<T>::return_type Value::get(const std::string& key) c
     const Value* obj = find(key);
     if (!obj)
         failwith("key ", key, " was not found.");
+
     return obj->as<T>();
 }
 
@@ -1565,7 +1563,6 @@ inline Value* Value::ensureValue(const std::string& key)
         *this = Value((Table()));
     if (!is<Table>()) {
         failwith("encountered non table value");
-        return nullptr;
     }
 
     std::istringstream ss(key);
@@ -1576,7 +1573,6 @@ inline Value* Value::ensureValue(const std::string& key)
         internal::Token t = lexer.nextKeyToken();
         if (!(t.type() == internal::TokenType::IDENT || t.type() == internal::TokenType::STRING)) {
             failwith("invalid key");
-            return nullptr;
         }
 
         std::string part = t.strValue();
@@ -1585,6 +1581,7 @@ inline Value* Value::ensureValue(const std::string& key)
             if (Value* candidate = current->findChild(part)) {
                 if (!candidate->is<Table>())
                     failwith("encountered non table value");
+
                 current = candidate;
             } else {
                 current = current->setChild(part, Table());
@@ -1595,7 +1592,6 @@ inline Value* Value::ensureValue(const std::string& key)
             return current->setChild(part, Value());
         } else {
             failwith("invalid key");
-            return nullptr;
         }
     }
 }
