@@ -1217,9 +1217,7 @@ inline std::string Value::spaces(int num)
 inline std::string Value::escapeKey(const std::string& key)
 {
     auto position = std::find_if(key.begin(), key.end(), [](char c) -> bool {
-        if (std::isalnum(c))
-            return false;
-        if (c != '_' && c == '-')
+        if (std::isalnum(c) || c == '_' || c == '-')
             return false;
         return true;
     });
