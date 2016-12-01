@@ -100,3 +100,27 @@ TEST(WriterTest, write_parse_table_03)
     toml::Value root = build_table_03();
     write_parse_compare(root);
 }
+
+TEST(WriterTest, write_table_keys)
+{
+    struct {
+        const char* key;
+        const char* expect;
+    } TEST_CASES[] = {
+        {"bare_key", "bare_key"} ,
+        {"barekey", "barekey"},
+        {"bare key", "\"bare key\""},
+        {"bare-key", "bare-key"},
+        {"bareKey", "bareKey"},
+    };
+
+    for (auto testCase : TEST_CASES) {
+        toml::Value root((toml::Table()));
+        root.setChild(testCase.key, "value");
+
+        ostringstream oss;
+        root.write(&oss);
+        string expect = string(testCase.expect) + " = \"value\"\n";
+        EXPECT_EQ(expect, oss.str());
+    }
+}
