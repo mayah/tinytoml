@@ -236,3 +236,11 @@ TEST(ParserComplexTest, array_table_02)
     EXPECT_EQ("something", secondTopics.get<string>("topic"));
     EXPECT_EQ(4, secondTopics.get<int>("count"));
 }
+
+TEST(ParserComplexTest, with_utf8_bom)
+{
+    toml::Value v = parse("with-utf8-bom");
+
+    const toml::Value& root = v.get<toml::Table>("I");
+    EXPECT_EQ("hate utf8 BOM", root.get<string>("really"));
+}
