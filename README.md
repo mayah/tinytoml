@@ -11,7 +11,7 @@ This library is distributed under simplified BSD License.
 
 tinytoml is a tiny [TOML](https://github.com/toml-lang/toml) parser for C++11 with following properties:
 - header file only
-- C++11 library friendly (array is std::vector, table is std::map, time is std::chrono::system_clock::time_point).
+- C++11 library friendly (array is `std::vector`, table is `std::unordered_map`, time is `std::chrono::system_clock::time_point`).
 - no external dependencies (note: we're using cmake for testing, but it's not required to use this library).
 
 We'd like to keep this library as handy as possible.

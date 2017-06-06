@@ -14,8 +14,8 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <map>
 #include <memory>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -27,7 +27,7 @@ namespace toml {
 class Value;
 typedef std::chrono::system_clock::time_point Time;
 typedef std::vector<Value> Array;
-typedef std::map<std::string, Value> Table;
+typedef std::unordered_map<std::string, Value> Table;
 
 namespace internal {
 template<typename T> struct call_traits_value {
