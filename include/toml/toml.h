@@ -289,6 +289,10 @@ public:
 
     int lineNo() const { return lineNo_; }
 
+    // Skips if UTF8BOM is found.
+    // Returns true if success. Returns false if intermediate state is left.
+    bool skipUTF8BOM();
+
 private:
     bool current(char* c);
     void next();
@@ -312,7 +316,14 @@ private:
 
 class Parser {
 public:
-    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR) { nextKey(); }
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR)
+    {
+        if (!lexer_.skipUTF8BOM()) {
+            token_ = Token(TokenType::ERROR, std::string("Invalid UTF8 BOM"));
+        } else {
+            nextKey();
+        }
+    }
 
     // Parses. If failed, value should be invalid value.
     // You can get the error by calling errorReason().
@@ -550,6 +561,31 @@ inline std::string escapeString(const std::string& s)
 // Lexer
 
 namespace internal {
+
+inline bool Lexer::skipUTF8BOM()
+{
+    // Check [EF, BB, BF]
+
+    int x1 = is_.peek();
+    if (x1 != 0xEF) {
+        // When the first byte is not 0xEF, it's not UTF8 BOM.
+        // Just return true.
+        return true;
+    }
+
+    is_.get();
+    int x2 = is_.get();
+    if (x2 != 0xBB) {
+        return false;
+    }
+
+    int x3 = is_.get();
+    if (x3 != 0xBF) {
+        return false;
+    }
+
+    return true;
+}
 
 inline bool Lexer::current(char* c)
 {
