@@ -1,6 +1,12 @@
 #ifndef TINYTOML_H_
 #define TINYTOML_H_
 
+//Disable warning about 'secure' non-portable versions of buffer-related functions
+#if defined(_MSC_VER)
+#pragma warning(disable:4996)
+#endif
+
+
 #include <algorithm>
 #include <cassert>
 #include <cctype>
