@@ -7,6 +7,10 @@
 
 #include <gtest/gtest.h>
 
+#if defined(_MSC_VER)
+#define timegm _mkgmtime
+#endif
+
 using namespace std;
 
 // Because timegm is defined in toml namespace...
