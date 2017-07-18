@@ -1,6 +1,10 @@
 #ifndef TOML_TEST_BUILD_H
 #define TOML_TEST_BUILD_H
 
+#if defined(_MSC_VER)
+#define timegm _mkgmtime
+#endif
+
 // Include me last in your _test.cc if you need me.
 
 inline toml::Value build_array_01(void)
