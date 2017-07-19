@@ -1,8 +1,9 @@
 #ifndef TOML_TEST_BUILD_H
 #define TOML_TEST_BUILD_H
 
-#if defined(_MSC_VER)
-#define timegm _mkgmtime
+// Because timegm is defined in toml namespace...
+#if defined(_WIN32)
+using toml::timegm;
 #endif
 
 // Include me last in your _test.cc if you need me.

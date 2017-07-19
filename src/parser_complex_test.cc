@@ -13,6 +13,11 @@
 
 using namespace std;
 
+// Because timegm is defined in toml namespace...
+#if defined(_WIN32)
+using toml::timegm;
+#endif
+
 namespace {
 
 toml::Value parse(const string& name)

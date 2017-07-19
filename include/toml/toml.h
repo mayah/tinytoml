@@ -224,15 +224,23 @@ inline time_t timegm(std::tm* timeptr)
 {
     return _mkgmtime(timeptr);
 }
-#endif
-#if defined(_MSC_VER)
-// Visual studio doesn't define gmtime_r, but mingw does
-inline std::tm* gmtime_r(const time_t* timer, std::tm* result)
+
+// On Windows, Visual Studio does not define gmtime_r. However, mingw might
+// do (or might not do). See https://github.com/mayah/tinytoml/issues/25,
+#ifndef gmtime_r
+inline struct tm* gmtime_r(const time_t* t, struct tm* r)
 {
-    gmtime_s(result, timer);
-    return result;
+    // gmtime is threadsafe in windows because it uses TLS
+    struct tm *theTm = gmtime(t);
+    if (theTm) {
+        *r = *theTm;
+        return r;
+    } else {
+        return 0;
+    }
 }
-#endif
+#endif  // gmtime_r
+#endif  // _WIN32
 
 namespace internal {
 
