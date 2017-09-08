@@ -852,6 +852,13 @@ inline Token Lexer::parseAsTime(const std::string& str)
         return Token(TokenType::ERROR, std::string("Invalid token"));
 #endif
 
+    if (!(1 <= MM && MM <= 12)) {
+        return Token(TokenType::ERROR, std::string("Invalid token"));
+    }
+    if (YYYY < 1900) {
+        return Token(TokenType::ERROR, std::string("Invalid token"));
+    }
+
     if (s[n] == '\0') {
         std::tm t;
         t.tm_sec = 0;
