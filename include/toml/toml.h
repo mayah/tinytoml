@@ -245,7 +245,7 @@ inline struct tm* gmtime_r(const time_t* t, struct tm* r)
 namespace internal {
 
 enum class TokenType {
-    ERROR,
+    ERROR_TOKEN,
     END_OF_FILE,
     END_OF_LINE,
     IDENT,
@@ -324,10 +324,10 @@ private:
 
 class Parser {
 public:
-    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR)
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR_TOKEN)
     {
         if (!lexer_.skipUTF8BOM()) {
-            token_ = Token(TokenType::ERROR, std::string("Invalid UTF8 BOM"));
+            token_ = Token(TokenType::ERROR_TOKEN, std::string("Invalid UTF8 BOM"));
         } else {
             nextKey();
         }
@@ -635,7 +635,7 @@ inline void Lexer::skipUntilNewLine()
 inline Token Lexer::nextStringDoubleQuote()
 {
     if (!consume('"'))
-        return Token(TokenType::ERROR, std::string("string didn't start with '\"'"));
+        return Token(TokenType::ERROR_TOKEN, std::string("string didn't start with '\"'"));
 
     std::string s;
     char c;
@@ -662,7 +662,7 @@ inline Token Lexer::nextStringDoubleQuote()
         next();
         if (c == '\\') {
             if (!current(&c))
-                return Token(TokenType::ERROR, std::string("string has unknown escape sequence"));
+                return Token(TokenType::ERROR_TOKEN, std::string("string has unknown escape sequence"));
             next();
             switch (c) {
             case 't': c = '\t'; break;
@@ -677,7 +677,7 @@ inline Token Lexer::nextStringDoubleQuote()
                     codepoint += c;
                     next();
                   } else {
-                    return Token(TokenType::ERROR, std::string("string has unknown escape sequence"));
+                    return Token(TokenType::ERROR_TOKEN, std::string("string has unknown escape sequence"));
                   }
                 }
                 s += unescape(codepoint);
@@ -692,7 +692,7 @@ inline Token Lexer::nextStringDoubleQuote()
                 }
                 continue;
             default:
-                return Token(TokenType::ERROR, std::string("string has unknown escape sequence"));
+                return Token(TokenType::ERROR_TOKEN, std::string("string has unknown escape sequence"));
             }
         } else if (c == '"') {
             if (multiline) {
@@ -718,13 +718,13 @@ inline Token Lexer::nextStringDoubleQuote()
         s += c;
     }
 
-    return Token(TokenType::ERROR, std::string("string didn't end"));
+    return Token(TokenType::ERROR_TOKEN, std::string("string didn't end"));
 }
 
 inline Token Lexer::nextStringSingleQuote()
 {
     if (!consume('\''))
-        return Token(TokenType::ERROR, std::string("string didn't start with '\''?"));
+        return Token(TokenType::ERROR_TOKEN, std::string("string didn't start with '\''?"));
 
     std::string s;
     char c;
@@ -765,7 +765,7 @@ inline Token Lexer::nextStringSingleQuote()
             continue;
         }
 
-        return Token(TokenType::ERROR, std::string("string didn't end with '\'\'\'' ?"));
+        return Token(TokenType::ERROR_TOKEN, std::string("string didn't end with '\'\'\'' ?"));
     }
 
     while (current(&c)) {
@@ -777,7 +777,7 @@ inline Token Lexer::nextStringSingleQuote()
         s += c;
     }
 
-    return Token(TokenType::ERROR, std::string("string didn't end with '\''?"));
+    return Token(TokenType::ERROR_TOKEN, std::string("string didn't end with '\''?"));
 }
 
 inline Token Lexer::nextKey()
@@ -790,7 +790,7 @@ inline Token Lexer::nextKey()
     }
 
     if (s.empty())
-        return Token(TokenType::ERROR, std::string("Unknown key format"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Unknown key format"));
 
     return Token(TokenType::IDENT, s);
 }
@@ -812,7 +812,7 @@ inline Token Lexer::nextValue()
             return Token(TokenType::BOOL, true);
         if (s == "false")
             return Token(TokenType::BOOL, false);
-        return Token(TokenType::ERROR, std::string("Unknown ident: ") + s);
+        return Token(TokenType::ERROR_TOKEN, std::string("Unknown ident: ") + s);
     }
 
     while (current(&c) && (('0' <= c && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
@@ -846,17 +846,17 @@ inline Token Lexer::parseAsTime(const std::string& str)
     int YYYY, MM, DD;
 #if defined(_MSC_VER)
     if (sscanf_s(s, "%d-%d-%d%n", &YYYY, &MM, &DD, &n) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #else
     if (sscanf(s, "%d-%d-%d%n", &YYYY, &MM, &DD, &n) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #endif
 
     if (!(1 <= MM && MM <= 12)) {
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
     }
     if (YYYY < 1900) {
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
     }
 
     if (s[n] == '\0') {
@@ -872,7 +872,7 @@ inline Token Lexer::parseAsTime(const std::string& str)
     }
 
     if (s[n] != 'T')
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 
     s = s + n + 1;
 
@@ -880,10 +880,10 @@ inline Token Lexer::parseAsTime(const std::string& str)
     double ss; // double for fraction
 #if defined(_MSC_VER)
     if (sscanf_s(s, "%d:%d:%lf%n", &hh, &mm, &ss, &n) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #else
     if (sscanf(s, "%d:%d:%lf%n", &hh, &mm, &ss, &n) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #endif
 
     std::tm t;
@@ -911,14 +911,14 @@ inline Token Lexer::parseAsTime(const std::string& str)
     int oh, om;
 #if defined(_MSC_VER)
     if (sscanf_s(s, "%c%d:%d", &pn, static_cast<unsigned>(sizeof(pn)), &oh, &om) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #else
     if (sscanf(s, "%c%d:%d", &pn, &oh, &om) != 3)
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 #endif
 
     if (pn != '+' && pn != '-')
-        return Token(TokenType::ERROR, std::string("Invalid token"));
+        return Token(TokenType::ERROR_TOKEN, std::string("Invalid token"));
 
     if (pn == '+') {
         tp -= std::chrono::hours(oh);
@@ -1909,7 +1909,7 @@ inline bool Parser::parseValue(Value* v)
         *v = token().timeValue();
         nextValue();
         return true;
-    case TokenType::ERROR:
+    case TokenType::ERROR_TOKEN:
         addError(token().strValue());
         return false;
     default:
