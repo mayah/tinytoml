@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <ctime>
+#include <fstream>
 #include <iomanip>
 #include <istream>
 #include <sstream>
@@ -213,6 +214,8 @@ struct ParseResult {
 
 // Parses from std::istream.
 ParseResult parse(std::istream&);
+// Parses a file.
+ParseResult parseFile(const std::string& filename);
 
 // ----------------------------------------------------------------------
 // Declarations for Implementations
@@ -385,6 +388,17 @@ inline ParseResult parse(std::istream& is)
         return ParseResult(std::move(v), std::string());
 
     return ParseResult(std::move(v), std::move(parser.errorReason()));
+}
+
+inline ParseResult parseFile(const std::string& filename)
+{
+    std::ifstream ifs(filename);
+    if (!ifs) {
+        return ParseResult(toml::Value(),
+                           std::string("could not open file: ") + filename);
+    }
+
+    return parse(ifs);
 }
 
 inline std::string format(std::stringstream& ss)

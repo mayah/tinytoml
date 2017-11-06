@@ -31,6 +31,7 @@ include_directories(../include)
 
 add_executable(parse_stdin parse_stdin.cc)
 add_executable(parse_file parse_file.cc)
+add_executable(parse_file2 parse_file_2.cc)
 
 function(add_toml_test target)
     add_executable(${target}_test ${target}_test.cc)

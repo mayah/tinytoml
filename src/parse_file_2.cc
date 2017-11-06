@@ -13,7 +13,10 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    toml::ParseResult pr = toml::parseFile(argv[1]);
+    ifstream ifs(argv[1]);
+    // Pass ifs without checking error (to test toml::parse detects and error).
+    // In usual case, I recommend to check ifs state.
+    toml::ParseResult pr = toml::parse(ifs);
     if (pr.valid()) {
         cout << pr.value;
     } else {
