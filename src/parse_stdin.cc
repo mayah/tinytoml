@@ -11,4 +11,6 @@ int main(void)
     } else {
         cout << pr.errorReason << endl;
     }
+
+    return 0;
 }

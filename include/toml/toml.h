@@ -374,6 +374,10 @@ private:
 
 inline ParseResult parse(std::istream& is)
 {
+    if (!is) {
+        return ParseResult(toml::Value(), "stream is in bad state. file does not exist?");
+    }
+
     internal::Parser parser(is);
     toml::Value v = parser.parse();
 
