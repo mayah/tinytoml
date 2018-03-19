@@ -413,6 +413,12 @@ std::string format(std::stringstream& ss, T&& t, Args&&... args)
     return format(ss, std::forward<Args>(args)...);
 }
 
+// If you want to compile without exception,
+//   1. Define TOML_HAVE_FAILWITH_REPLACEMENT
+//   2. Define your own toml::failwith.
+// e.g. You can just abort here instead of exception.
+#ifndef TOML_HAVE_FAILWITH_REPLACEMENT
+
 template<typename... Args>
 #if defined(_MSC_VER)
 __declspec(noreturn)
@@ -424,6 +430,8 @@ void failwith(Args&&... args)
     std::stringstream ss;
     throw std::runtime_error(format(ss, std::forward<Args>(args)...));
 }
+
+#endif
 
 namespace internal {
 
