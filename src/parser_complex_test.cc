@@ -62,7 +62,7 @@ TEST(ParserComplexTest, boolean)
     EXPECT_FALSE(v.get<bool>("false"));
 }
 
-TEST(ParserComplexTest, integer)
+TEST(ParserComplexTest, integer_01)
 {
     toml::Value v = parse("integer-01");
 
@@ -75,7 +75,19 @@ TEST(ParserComplexTest, integer)
     EXPECT_EQ(12345, v.get<int>("int7"));
 }
 
-TEST(ParserComplexTest, float)
+TEST(ParserComplexTest, DISABLED_integer_02)
+{
+    toml::Value v = parse("integer-02");
+
+    EXPECT_EQ(INT64_C(0xDEADBEEF), v.get<int64_t>("hex1"));
+    EXPECT_EQ(INT64_C(0xdeadbeef), v.get<int64_t>("hex2"));
+    EXPECT_EQ(INT64_C(0xdeadbeef), v.get<int64_t>("hex3"));
+    EXPECT_EQ(01234567, v.get<int>("oct1"));
+    EXPECT_EQ(0755, v.get<int>("oct2"));
+    EXPECT_EQ(0b11010110, v.get<int>("bin1"));
+}
+
+TEST(ParserComplexTest, float_01)
 {
     toml::Value v = parse("float-01");
 
@@ -92,7 +104,20 @@ TEST(ParserComplexTest, float)
     // EXPECT_EQ(1e1000, v.get<double>("flt9"));
 }
 
-TEST(ParserComplexTest, string)
+TEST(ParserComplexTest, DISABLED_float_02)
+{
+    toml::Value v = parse("float-02");
+
+    EXPECT_TRUE(v.get<double>("sf1") > 0 && std::isinf(v.get<double>("sf1")));
+    EXPECT_TRUE(v.get<double>("sf2") > 0 && std::isinf(v.get<double>("sf2")));
+    EXPECT_TRUE(v.get<double>("sf3") < 0 && std::isinf(v.get<double>("sf3")));
+
+    EXPECT_TRUE(std::isnan(v.get<double>("sf4")));
+    EXPECT_TRUE(std::isnan(v.get<double>("sf5")));
+    EXPECT_TRUE(std::isnan(v.get<double>("sf6")));
+}
+
+TEST(ParserComplexTest, string_01)
 {
     toml::Value v = parse("string-01");
 
@@ -110,6 +135,18 @@ TEST(ParserComplexTest, string)
     EXPECT_EQ("<\\i\\c*\\s*>", v.get<string>("regex"));
     EXPECT_EQ("I [dw]on't need \\d{2} apples", v.get<string>("regex2"));
     EXPECT_EQ("The first newline is\ntrimmed in raw strings.\n   All other whitespace\n   is preserved.\n", v.get<string>("lines"));
+}
+
+TEST(ParserComplexTest, string_02)
+{
+    toml::Value v = parse("string-02");
+
+    EXPECT_EQ(u8"\U00000010", v.get<string>("byte_1"));
+    EXPECT_EQ(u8"\U00000100", v.get<string>("byte_2"));
+    EXPECT_EQ(u8"\U00001000", v.get<string>("byte_3"));
+    EXPECT_EQ(u8"\U00010000", v.get<string>("byte_4"));
+
+    EXPECT_EQ(u8"\U00000010\U00000100\U00001000\U00010000\U00100000", v.get<string>("unicode_long"));
 }
 
 TEST(ParserComplexTest, datetime1)
@@ -180,6 +217,16 @@ TEST(ParserComplexTest, table_03)
 
     EXPECT_EQ(1, v.get<toml::Array>("a")[0].get<int>("b.x"));
     EXPECT_EQ(2, v.get<toml::Array>("a")[1].get<int>("b.x"));
+}
+
+TEST(ParserComplexTex, DISABLED_table_04)
+{
+    toml::Value v = parse("table-04");
+
+    EXPECT_EQ("Orange", v.get<string>("table.name"));
+    EXPECT_EQ("orange", v.get<string>("table.physical.color"));
+    EXPECT_EQ("round", v.get<string>("table.physical.shape"));
+    EXPECT_EQ(true, v.get<bool>("table.site.\"google.com\""));
 }
 
 TEST(ParserComplexTest, inlinetable_01)

@@ -1,0 +1,5 @@
+# THIS IS INVALID
+
+[table]
+a.b = 1
+a.b.c = 2

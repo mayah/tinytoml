@@ -1,0 +1,7 @@
+# for dotted key
+
+[table]
+name = "Orange"
+physical.color = "orange"
+physical.shape = "round"
+site."google.com" = true
