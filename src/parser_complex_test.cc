@@ -149,7 +149,7 @@ TEST(ParserComplexTest, string_02)
     EXPECT_EQ(u8"\U00000010\U00000100\U00001000\U00010000\U00100000", v.get<string>("unicode_long"));
 }
 
-TEST(ParserComplexTest, datetime1)
+TEST(ParserComplexTest, datetime_01)
 {
     toml::Value v = parse("datetime-01");
 
@@ -159,7 +159,7 @@ TEST(ParserComplexTest, datetime1)
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 0, 0, 0, 0), v.get<toml::Time>("date4"));
 }
 
-TEST(ParserComplexTest, datetime2)
+TEST(ParserComplexTest, datetime_02)
 {
     toml::Value v = parse("datetime-02");
 
@@ -170,6 +170,13 @@ TEST(ParserComplexTest, datetime2)
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123400), v.get<toml::Time>("date4"));
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123450), v.get<toml::Time>("date5"));
     EXPECT_EQ(makeTimePoint(1979, 5, 27, 7, 32, 0, 123456), v.get<toml::Time>("date6"));
+}
+
+TEST(ParserComplexTest, DISABLED_datetime_03)
+{
+    toml::Value v = parse("datetime-03");
+
+    EXPECT_TRUE(false) << "write the test!";
 }
 
 TEST(ParserComplexTest, array)
