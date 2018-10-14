@@ -75,7 +75,7 @@ TEST(ParserComplexTest, integer_01)
     EXPECT_EQ(12345, v.get<int>("int7"));
 }
 
-TEST(ParserComplexTest, DISABLED_integer_02)
+TEST(ParserComplexTest, integer_02)
 {
     toml::Value v = parse("integer-02");
 
