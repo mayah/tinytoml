@@ -76,49 +76,36 @@ TEST(LexerTest, string2)
     EXPECT_EQ("foo\nbar", t.strValue());
 }
 
-TEST(LexerTest, integer1)
+TEST(LexerTest, integer)
 {
-    stringstream ss("1");
-    Lexer lexer(ss);
+    static const struct {
+        const char* const str;
+        const std::int64_t expected_value;
+    } TESTCASES[] = {
+        { "0", 0 },
+        { "1", 1 },
+        { "+1", 1 },
+        { "-1", -1 },
+        { "-100_000", -100000 },
+        { "0_0", 0 },
+        { "0xdeadbeaf", 0xdeadbeaf },
+        { "0xDEADBEAF", 0xdeadbeaf },
+        { "0xdead_beaf", 0xdeadbeaf },
+        { "0o01234567", 01234567 },
+        { "0o755", 0755 },
+        { "0b11010110", 0xD6 },
+    };
 
-    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
-}
+    for (const auto& tc : TESTCASES) {
+        stringstream ss(tc.str);
+        Lexer lexer(ss);
 
-TEST(LexerTest, integer2)
-{
-    stringstream ss("0");
-    Lexer lexer(ss);
+        Token t = lexer.nextValueToken();
+        EXPECT_EQ(TokenType::INT, t.type()) << tc.str;
+        EXPECT_EQ(tc.expected_value, t.intValue()) << tc.str;
 
-    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
-}
-
-TEST(LexerTest, integer3)
-{
-    stringstream ss("+1");
-    Lexer lexer(ss);
-
-    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
-}
-
-TEST(LexerTest, integer4)
-{
-    stringstream ss("-1");
-    Lexer lexer(ss);
-
-    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
-}
-
-TEST(LexerTest, integer5)
-{
-    stringstream ss("-100_000");
-    Lexer lexer(ss);
-
-    EXPECT_EQ(TokenType::INT, lexer.nextValueToken().type());
-    EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
+        EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
+    }
 }
 
 TEST(LexerTest, time1)

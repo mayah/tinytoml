@@ -485,14 +485,88 @@ inline std::string unescape(const std::string& codepoint)
 
 // Returns true if |s| is integer.
 // [+-]?\d+(_\d+)*
-inline bool isInteger(const std::string& s)
+// or [+-]?0[bxo]\d+(_\d+)*
+inline bool parseAsInteger(const std::string& s, std::int64_t* value)
 {
     if (s.empty())
         return false;
 
+    *value = 0;
+    bool positive = true;
     std::string::size_type p = 0;
-    if (s[p] == '+' || s[p] == '-')
+    if (s[p] == '+') {
         ++p;
+    } else if (s[p] == '-') {
+        positive = false;
+        ++p;
+    }
+
+    // 0bXXXX
+    if (p + 2 < s.size() && s[p] == '0' && s[p + 1] == 'b') {
+        p += 2;
+        while (p < s.size()) {
+            if (s[p] == '0') {
+                *value <<= 1;
+            } else if (s[p] == '1') {
+                *value = *value * 2 + 1;
+            } else if (s[p] == '_') {
+                // skip
+            } else {
+                return false;
+            }
+            ++p;
+        }
+
+        if (!positive) {
+            *value = -*value;
+        }
+        return true;
+    }
+
+    // 0oXXXX
+    if (p + 2 < s.size() && s[p] == '0' && s[p + 1] == 'o') {
+        p += 2;
+        while (p < s.size()) {
+            if ('0' <= s[p] && s[p] <= '7') {
+                *value = (*value << 3) + (s[p] - '0');
+            } else if (s[p] == '_') {
+                // skip
+            } else {
+                return false;
+            }
+            ++p;
+        }
+
+        if (!positive) {
+            *value = -*value;
+        }
+        return true;
+    }
+
+    // 0xXXXX
+    if (p + 2 < s.size() && s[p] == '0' && s[p + 1] == 'x') {
+        p += 2;
+        while (p < s.size()) {
+            if ('0' <= s[p] && s[p] <= '9') {
+                *value = (*value << 4) + (s[p] - '0');
+            } else if ('a' <= s[p] && s[p] <= 'f') {
+                *value = (*value << 4) + (s[p] - 'a') + 10;
+            } else if ('A' <= s[p] && s[p] <= 'F') {
+                *value = (*value << 4) + (s[p] - 'A') + 10;
+            } else if (s[p] == '_') {
+                // skip
+            } else {
+                return false;
+            }
+            ++p;
+        }
+
+        if (!positive) {
+            *value = -*value;
+        }
+
+        return true;
+    }
 
     while (p < s.size() && '0' <= s[p] && s[p] <= '9') {
         ++p;
@@ -503,7 +577,13 @@ inline bool isInteger(const std::string& s)
         }
     }
 
-    return p == s.size();
+    if (p != s.size()) {
+        return false;
+    }
+
+    std::stringstream ss(removeDelimiter(s));
+    ss >> *value;
+    return true;
 }
 
 // Returns true if |s| is double.
@@ -841,17 +921,18 @@ inline Token Lexer::nextValue()
         return Token(TokenType::ERROR_TOKEN, std::string("Unknown ident: ") + s);
     }
 
-    while (current(&c) && (('0' <= c && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
-                           c == 'T' || c == 'Z' || c == '_' || c == ':' || c == '-' || c == '+')) {
+    while (current(&c) && (('0' <= c && c <= '9') || ('a' <= c && c <= 'f') ||
+                           ('A' <= c && c <= 'F') || c == '.' ||
+                           c == 'T' || c == 'Z' || c == '_' ||
+                           c == ':' || c == '-' || c == '+' ||
+                           c == 'x' || c == 'o')) {
         next();
         s += c;
     }
 
-    if (isInteger(s)) {
-        std::stringstream ss(removeDelimiter(s));
-        std::int64_t x;
-        ss >> x;
-        return Token(TokenType::INT, x);
+    std::int64_t v;
+    if (parseAsInteger(s, &v)) {
+        return Token(TokenType::INT, v);
     }
 
     if (isDouble(s)) {
