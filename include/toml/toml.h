@@ -810,7 +810,7 @@ inline Token Lexer::nextKey()
 {
     std::string s;
     char c;
-    while (current(&c) && (isalnum(c) || c == '_' || c == '-')) {
+    while (current(&c) && (isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-')) {
         s += c;
         next();
     }
@@ -826,10 +826,10 @@ inline Token Lexer::nextValue()
     std::string s;
     char c;
 
-    if (current(&c) && isalpha(c)) {
+    if (current(&c) && isalpha(static_cast<unsigned char>(c))) {
         s += c;
         next();
-        while (current(&c) && isalpha(c)) {
+        while (current(&c) && isalpha(static_cast<unsigned char>(c))) {
             s += c;
             next();
         }
@@ -1309,7 +1309,7 @@ inline std::string Value::spaces(int num)
 inline std::string Value::escapeKey(const std::string& key)
 {
     auto position = std::find_if(key.begin(), key.end(), [](char c) -> bool {
-        if (std::isalnum(c) || c == '_' || c == '-')
+        if (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-')
             return false;
         return true;
     });
