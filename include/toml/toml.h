@@ -269,12 +269,12 @@ enum class TokenType {
 
 class Token {
 public:
-    explicit Token(TokenType type) : type_(type) {}
-    Token(TokenType type, const std::string& v) : type_(type), str_value_(v) {}
-    Token(TokenType type, bool v) : type_(type), int_value_(v) {}
-    Token(TokenType type, std::int64_t v) : type_(type), int_value_(v) {}
-    Token(TokenType type, double v) : type_(type), double_value_(v) {}
-    Token(TokenType type, std::chrono::system_clock::time_point tp) : type_(type), time_value_(tp) {}
+    explicit Token(TokenType tokenType) : type_(tokenType) {}
+    Token(TokenType tokenType, const std::string& v) : type_(tokenType), str_value_(v) {}
+    Token(TokenType tokenType, bool v) : type_(tokenType), int_value_(v) {}
+    Token(TokenType tokenType, std::int64_t v) : type_(tokenType), int_value_(v) {}
+    Token(TokenType tokenType, double v) : type_(tokenType), double_value_(v) {}
+    Token(TokenType tokenType, std::chrono::system_clock::time_point tp) : type_(tokenType), time_value_(tp) {}
 
     TokenType type() const { return type_; }
     const std::string& strValue() const { return str_value_; }
