@@ -9,14 +9,12 @@
 
 #if defined(_MSC_VER)
 #define timegm _mkgmtime
+#elif defined(_WIN32)
+// Because timegm is defined in toml namespace...
+using toml::timegm;
 #endif
 
 using namespace std;
-
-// Because timegm is defined in toml namespace...
-#if defined(_WIN32)
-using toml::timegm;
-#endif
 
 namespace {
 

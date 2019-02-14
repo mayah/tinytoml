@@ -288,7 +288,7 @@ inline toml::Value build_string_01(void)
     toml::Value root((toml::Table()));
     toml::Value* top = &root;
 
-    top->setChild("s1", "I'm a string. \"You can quote me\". Name\tJos\u00E9\nLocation\tSF.");
+    top->setChild("s1", u8"I'm a string. \"You can quote me\". Name\tJos\u00E9\nLocation\tSF.");
     top->setChild("s2", "Roses are red\nViolets are blue");
 
     // These three strings are equivalent values, only represented differently on disk (parser).
