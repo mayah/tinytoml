@@ -788,7 +788,6 @@ inline Token Lexer::nextStringSingleQuote()
 
             next();
             s += c;
-            continue;
         }
 
         return Token(TokenType::ERROR_TOKEN, std::string("string didn't end with '\'\'\'' ?"));
