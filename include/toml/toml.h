@@ -28,7 +28,20 @@ namespace toml {
 class Value;
 typedef std::chrono::system_clock::time_point Time;
 typedef std::vector<Value> Array;
-typedef std::map<std::string, Value> Table;
+
+class Table : public std::map<std::string, Value> {
+public:
+    inline void setInline(bool flag)
+    {
+        isInline_ = flag;
+    }
+    inline bool IsInline() const
+    {
+        return isInline_;
+    }
+private:
+    bool isInline_ = false;
+};
 
 namespace internal {
 template<typename T> struct call_traits_value {
@@ -155,6 +168,10 @@ public:
     Value* setChild(const std::string& key, const Value& v);
     Value* setChild(const std::string& key, Value&& v);
     bool eraseChild(const std::string& key);
+
+    //
+    void setInline(bool flag);
+    bool IsInline() const;
 
     // ----------------------------------------------------------------------
     // For Array value
@@ -1366,23 +1383,50 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
         (*os) << ']';
         break;
     case TABLE_TYPE:
-        for (const auto& kv : *table_) {
+        if (table_->IsInline()) {
+            (*os) << "{ ";
+        }
+        for (auto iter = table_->begin(); iter != table_->end(); ++iter) {
+            const auto& kv = *iter;
             if (kv.second.is<Table>())
                 continue;
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>())
                 continue;
             (*os) << spaces(indent) << escapeKey(kv.first) << " = ";
             kv.second.write(os, keyPrefix, indent >= 0 ? indent + 1 : indent);
-            (*os) << '\n';
+            if (table_->IsInline()) {
+                ++iter;
+                if (iter != table_->end()) {
+                    (*os) << ", ";
+                }
+                --iter;
+            } else {
+                (*os) << '\n';
+            }
         }
-        for (const auto& kv : *table_) {
+        for (auto iter = table_->begin(); iter != table_->end(); ++iter) {
+            const auto& kv = *iter;
             if (kv.second.is<Table>()) {
                 std::string key(keyPrefix);
                 if (!keyPrefix.empty())
                     key += ".";
                 key += escapeKey(kv.first);
-                (*os) << "\n" << spaces(indent) << "[" << key << "]\n";
+                if (kv.second.IsInline()) {
+                    if (!table_->IsInline()) {
+                        (*os) << "\n";
+                    }
+                    (*os) << escapeKey(kv.first) << " = ";
+                } else {
+                    (*os) << "\n" << spaces(indent) << "[" << key << "]\n";
+                }
                 kv.second.write(os, key, indent >= 0 ? indent + 1 : indent);
+                if (table_->IsInline()) {
+                    ++iter;
+                    if (iter != table_->end()) {
+                        (*os) << ", ";
+                    }
+                    --iter;
+                }
             }
             if (kv.second.is<Array>() && kv.second.size() > 0 && kv.second.find(0)->is<Table>()) {
                 std::string key(keyPrefix);
@@ -1394,6 +1438,9 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
                     v.write(os, key, indent >= 0 ? indent + 1 : indent);
                 }
             }
+        }
+        if (table_->IsInline()) {
+            (*os) << " }";
         }
         break;
     default:
@@ -1585,6 +1632,20 @@ inline bool Value::eraseChild(const std::string& key)
         failwith("type must be table to do erase(key).");
 
     return table_->erase(key) > 0;
+}
+
+inline void Value::setInline(bool flag)
+{
+    if (!is<Table>())
+        failwith("type must be table to do setInline(flag).");
+    table_->setInline(flag);
+}
+
+inline bool Value::IsInline() const
+{
+    if(!is<Table>())
+        failwith("type must be table to do IsInline.");
+    return table_->IsInline();
 }
 
 inline Value& Value::operator[](const std::string& key)
@@ -2039,6 +2100,7 @@ inline bool Parser::parseInlineTable(Value* value)
 
     if (!consumeForValue(TokenType::RBRACE))
         return false;
+    t.setInline(true);
     *value = std::move(t);
     return true;
 }
