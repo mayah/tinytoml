@@ -286,8 +286,8 @@ public:
 private:
     TokenType type_;
     std::string str_value_;
-    std::int64_t int_value_;
-    double double_value_;
+    std::int64_t int_value_ = 0;
+    double double_value_ = 0.0;
     std::chrono::system_clock::time_point time_value_;
 };
 
