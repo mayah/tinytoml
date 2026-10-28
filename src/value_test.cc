@@ -496,3 +496,21 @@ TEST(ValueTest, operatorBox)
     EXPECT_EQ("foobar", v.findChild("foo.bar")->as<std::string>());
     EXPECT_EQ("bar", v["foo"].as<std::string>());
 }
+
+TEST(ValueTest, assignFromOwnChild)
+{
+    toml::Value v1;
+    v1["a"]["b"] = 1;
+    v1 = v1["a"];
+    EXPECT_EQ(1, v1.get<int>("b"));
+
+    toml::Value v2;
+    v2["a"]["b"] = 2;
+    v2 = std::move(v2["a"]);
+    EXPECT_EQ(2, v2.get<int>("b"));
+
+    toml::Value v3;
+    v3.push(3);
+    v3 = *v3.find(0);
+    EXPECT_EQ(3, v3.as<int>());
+}
