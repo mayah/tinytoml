@@ -19,7 +19,7 @@ if(${CMAKE_VERSION} VERSION_LESS 2.8.12)
 endif()
 
 if(MSVC)
-    # Use mutli-thread runtime library to match with gtest's one.
+    # Use multi-thread runtime library to match with gtest's one.
     add_compile_options("/MT$<$<CONFIG:Debug>:d>")
 else()
     add_compile_options("-Wall" "-Wextra" "-std=c++11")

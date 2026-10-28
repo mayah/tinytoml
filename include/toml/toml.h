@@ -99,7 +99,7 @@ public:
     Value(const void* v) = delete;
     ~Value();
 
-    // Retruns Value size.
+    // Returns Value size.
     // 0 for invalid value.
     // The number of inner elements for array or table.
     // 1 for other types.
@@ -763,7 +763,7 @@ inline Token Lexer::nextStringSingleQuote()
         }
         next();
         // raw string literal started.
-        // Newline just after """ should be ignored.
+        // Newline just after ''' should be ignored.
         if (current(&c) && c == '\n')
             next();
 
