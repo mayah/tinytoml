@@ -130,7 +130,7 @@ TEST(LexerTest, time1)
     EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
-TEST(LexerTest, exmaple1)
+TEST(LexerTest, example1)
 {
     stringstream ss("x = true\n");
     Lexer lexer(ss);
@@ -142,7 +142,7 @@ TEST(LexerTest, exmaple1)
     EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
-TEST(LexerTest, exmaple2)
+TEST(LexerTest, example2)
 {
     stringstream ss(
         "x = [1, 2, 3]\n"
@@ -178,7 +178,7 @@ TEST(LexerTest, exmaple2)
     EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
-TEST(LexerTest, exmaple3)
+TEST(LexerTest, example3)
 {
     stringstream ss(
         "[[kotori]]\n"
@@ -214,7 +214,7 @@ TEST(LexerTest, exmaple3)
     EXPECT_EQ(TokenType::END_OF_FILE, lexer.nextValueToken().type());
 }
 
-TEST(LexerTest, exmaple4)
+TEST(LexerTest, example4)
 {
     stringstream ss(
         "[kotori]# foo bar\n"
