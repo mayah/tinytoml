@@ -1087,25 +1087,10 @@ inline Value& Value::operator=(const Value& v)
     if (this == &v)
         return *this;
 
-    this->~Value();
-
-    type_ = v.type_;
-    switch (v.type_) {
-    case NULL_TYPE: null_ = v.null_; break;
-    case BOOL_TYPE: bool_ = v.bool_; break;
-    case INT_TYPE: int_ = v.int_; break;
-    case DOUBLE_TYPE: double_ = v.double_; break;
-    case STRING_TYPE: string_ = new std::string(*v.string_); break;
-    case TIME_TYPE: time_ = new Time(*v.time_); break;
-    case ARRAY_TYPE: array_ = new Array(*v.array_); break;
-    case TABLE_TYPE: table_ = new Table(*v.table_); break;
-    default:
-        assert(false);
-        type_ = NULL_TYPE;
-        null_ = nullptr;
-    }
-
-    return *this;
+    // |v| might be owned by |this| (e.g. root = root["child"]), so copy it
+    // before destroying the current value.
+    Value tmp(v);
+    return *this = std::move(tmp);
 }
 
 inline Value& Value::operator=(Value&& v) noexcept
@@ -1113,26 +1098,29 @@ inline Value& Value::operator=(Value&& v) noexcept
     if (this == &v)
         return *this;
 
+    // |v| might be owned by |this| (e.g. root = std::move(root["child"])),
+    // so take over its content before destroying the current value.
+    Value tmp(std::move(v));
     this->~Value();
 
-    type_ = v.type_;
-    switch (v.type_) {
-    case NULL_TYPE: null_ = v.null_; break;
-    case BOOL_TYPE: bool_ = v.bool_; break;
-    case INT_TYPE: int_ = v.int_; break;
-    case DOUBLE_TYPE: double_ = v.double_; break;
-    case STRING_TYPE: string_ = v.string_; break;
-    case TIME_TYPE: time_ = v.time_; break;
-    case ARRAY_TYPE: array_ = v.array_; break;
-    case TABLE_TYPE: table_ = v.table_; break;
+    type_ = tmp.type_;
+    switch (tmp.type_) {
+    case NULL_TYPE: null_ = tmp.null_; break;
+    case BOOL_TYPE: bool_ = tmp.bool_; break;
+    case INT_TYPE: int_ = tmp.int_; break;
+    case DOUBLE_TYPE: double_ = tmp.double_; break;
+    case STRING_TYPE: string_ = tmp.string_; break;
+    case TIME_TYPE: time_ = tmp.time_; break;
+    case ARRAY_TYPE: array_ = tmp.array_; break;
+    case TABLE_TYPE: table_ = tmp.table_; break;
     default:
         assert(false);
         type_ = NULL_TYPE;
         null_ = nullptr;
     }
 
-    v.type_ = NULL_TYPE;
-    v.null_ = nullptr;
+    tmp.type_ = NULL_TYPE;
+    tmp.null_ = nullptr;
     return *this;
 }
 
