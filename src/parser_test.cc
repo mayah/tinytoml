@@ -275,6 +275,16 @@ TEST(ParserTest, parseArrayTable)
     EXPECT_EQ(2, ar[1].get<int>("bar"));
 }
 
+TEST(ParserTest, parseQuotedKeyWithDot)
+{
+    toml::Value v = parse(
+        "a = { b = 1 }\n"
+        "\"a.b\" = 2\n");
+
+    EXPECT_EQ(1, v.get<int>("a.b"));
+    EXPECT_EQ(2, v.findChild("a.b")->as<int>());
+}
+
 TEST(ParserTest, commentAfterLine)
 {
     toml::Value v = parse(
