@@ -100,6 +100,26 @@ INSTANTIATE_TEST_CASE_P(
     ParserFailureTest,
     testing::ValuesIn(listFailureTestcases()));
 
+TEST(ParserNestingTest, tooDeepNesting)
+{
+    // Should be rejected without stack overflow.
+    // See https://github.com/mayah/tinytoml/issues/49 and #51.
+    const char* openers[] = { "[", "{a=" };
+    for (const char* opener : openers) {
+        string s = "x = ";
+        for (int i = 0; i < 100000; ++i)
+            s += opener;
+        stringstream ss(s);
+        toml::ParseResult result = toml::parse(ss);
+        EXPECT_FALSE(result.valid());
+    }
+
+    string ok = "x = " + string(TOML_MAX_NESTING_DEPTH, '[') + string(TOML_MAX_NESTING_DEPTH, ']');
+    stringstream ss(ok);
+    toml::ParseResult result = toml::parse(ss);
+    EXPECT_TRUE(result.valid()) << result.errorReason;
+}
+
 int main(int argc, char* argv[])
 {
     testing::InitGoogleTest(&argc, argv);

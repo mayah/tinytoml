@@ -245,6 +245,13 @@ inline struct tm* gmtime_r(const time_t* t, struct tm* r)
 #endif  // gmtime_r
 #endif  // _WIN32
 
+// Arrays and inline tables are parsed recursively. To avoid stack overflow
+// on malicious input like "a = [[[[...", nesting deeper than this is
+// rejected as a parse error. Define it before including toml.h to change.
+#ifndef TOML_MAX_NESTING_DEPTH
+#define TOML_MAX_NESTING_DEPTH 256
+#endif
+
 namespace internal {
 
 enum class TokenType {
@@ -327,7 +334,7 @@ private:
 
 class Parser {
 public:
-    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR_TOKEN)
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR_TOKEN), depth_(0)
     {
         if (!lexer_.skipUTF8BOM()) {
             token_ = Token(TokenType::ERROR_TOKEN, std::string("Invalid UTF8 BOM"));
@@ -368,6 +375,7 @@ private:
     Lexer lexer_;
     Token token_;
     std::string errorReason_;
+    int depth_;
 };
 
 } // namespace internal
@@ -1917,9 +1925,16 @@ inline bool Parser::parseValue(Value* v)
         nextValue();
         return true;
     case TokenType::LBRACKET:
-        return parseArray(v);
-    case TokenType::LBRACE:
-        return parseInlineTable(v);
+    case TokenType::LBRACE: {
+        if (depth_ >= TOML_MAX_NESTING_DEPTH) {
+            addError("array or inline table is nested too deeply");
+            return false;
+        }
+        ++depth_;
+        bool ok = token().type() == TokenType::LBRACKET ? parseArray(v) : parseInlineTable(v);
+        --depth_;
+        return ok;
+    }
     case TokenType::BOOL:
         *v = token().boolValue();
         nextValue();
