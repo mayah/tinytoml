@@ -1988,8 +1988,11 @@ inline bool Parser::parseArray(Value* v)
         skipForValue();
         if (token().type() == TokenType::RBRACKET)
             break;
-        if (token().type() == TokenType::COMMA)
-            nextValue();
+        if (token().type() != TokenType::COMMA) {
+            addError("array didn't have ',' for delimiter?");
+            return false;
+        }
+        nextValue();
     }
 
     if (!consumeForValue(TokenType::RBRACKET))
