@@ -1884,7 +1884,9 @@ inline bool Parser::parseKeyValue(Value* current)
     if (!consumeEOLorEOFForKey())
         return false;
 
-    if (current->has(key)) {
+    // |key| is a single (possibly quoted) key, so it must not be parsed as
+    // a dotted key path by has().
+    if (current->findChild(key)) {
         addError("Multiple same key: " + key);
         return false;
     }
