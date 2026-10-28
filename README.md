@@ -22,7 +22,7 @@ We'd like to keep this library as handy as possible.
 - C++11 libraries.
 
 I've only checked this library works with recent clang++ (3.5) and g++ (4.7). I didn't check this with cl.exe.
-Acutally I'm using this library on my Linux app and Mac app. However, I haven't written Windows app yet.
+Actually I'm using this library on my Linux app and Mac app. However, I haven't written Windows app yet.
 
 ## How to use
 
