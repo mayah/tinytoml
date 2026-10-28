@@ -334,7 +334,7 @@ private:
 
 class Parser {
 public:
-    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR_TOKEN), depth_(0)
+    explicit Parser(std::istream& is) : lexer_(is), token_(TokenType::ERROR_TOKEN)
     {
         if (!lexer_.skipUTF8BOM()) {
             token_ = Token(TokenType::ERROR_TOKEN, std::string("Invalid UTF8 BOM"));
@@ -364,18 +364,18 @@ private:
 
     bool parseKeyValue(Value*);
     bool parseKey(std::string*);
-    bool parseValue(Value*);
+    // |depth| is the nesting depth of arrays and inline tables.
+    bool parseValue(Value*, int depth);
     bool parseBool(Value*);
     bool parseNumber(Value*);
-    bool parseArray(Value*);
-    bool parseInlineTable(Value*);
+    bool parseArray(Value*, int depth);
+    bool parseInlineTable(Value*, int depth);
 
     void addError(const std::string& reason);
 
     Lexer lexer_;
     Token token_;
     std::string errorReason_;
-    int depth_;
 };
 
 } // namespace internal
@@ -1875,7 +1875,7 @@ inline bool Parser::parseKeyValue(Value* current)
     }
 
     Value v;
-    if (!parseValue(&v))
+    if (!parseValue(&v, 0))
         return false;
     if (!consumeEOLorEOFForKey())
         return false;
@@ -1904,7 +1904,7 @@ inline bool Parser::parseKey(std::string* key)
     return false;
 }
 
-inline bool Parser::parseValue(Value* v)
+inline bool Parser::parseValue(Value* v, int depth)
 {
     switch (token().type()) {
     case TokenType::STRING:
@@ -1913,16 +1913,9 @@ inline bool Parser::parseValue(Value* v)
         nextValue();
         return true;
     case TokenType::LBRACKET:
-    case TokenType::LBRACE: {
-        if (depth_ >= TOML_MAX_NESTING_DEPTH) {
-            addError("array or inline table is nested too deeply");
-            return false;
-        }
-        ++depth_;
-        bool ok = token().type() == TokenType::LBRACKET ? parseArray(v) : parseInlineTable(v);
-        --depth_;
-        return ok;
-    }
+        return parseArray(v, depth);
+    case TokenType::LBRACE:
+        return parseInlineTable(v, depth);
     case TokenType::BOOL:
         *v = token().boolValue();
         nextValue();
@@ -1965,8 +1958,13 @@ inline bool Parser::parseBool(Value* v)
     return false;
 }
 
-inline bool Parser::parseArray(Value* v)
+inline bool Parser::parseArray(Value* v, int depth)
 {
+    if (depth >= TOML_MAX_NESTING_DEPTH) {
+        addError("array or inline table is nested too deeply");
+        return false;
+    }
+
     if (!consumeForValue(TokenType::LBRACKET))
         return false;
 
@@ -1979,7 +1977,7 @@ inline bool Parser::parseArray(Value* v)
 
         skipForValue();
         Value x;
-        if (!parseValue(&x))
+        if (!parseValue(&x, depth + 1))
             return false;
 
         if (!a.empty()) {
@@ -2006,8 +2004,13 @@ inline bool Parser::parseArray(Value* v)
     return true;
 }
 
-inline bool Parser::parseInlineTable(Value* value)
+inline bool Parser::parseInlineTable(Value* value, int depth)
 {
+    if (depth >= TOML_MAX_NESTING_DEPTH) {
+        addError("array or inline table is nested too deeply");
+        return false;
+    }
+
     // For inline table, next is KEY, so use consumeForKey here.
     if (!consumeForKey(TokenType::LBRACE))
         return false;
@@ -2034,7 +2037,7 @@ inline bool Parser::parseInlineTable(Value* value)
         if (!consumeForValue(TokenType::EQUAL))
             return false;
         Value v;
-        if (!parseValue(&v))
+        if (!parseValue(&v, depth + 1))
             return false;
 
         if (t.has(key)) {
