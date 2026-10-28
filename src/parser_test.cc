@@ -185,7 +185,7 @@ TEST(ParserTest, parseStringDoubleQuoteMultiLine3)
     EXPECT_EQ("foo\nbar", v.get<string>("x"));
 }
 
-TEST(ParserTest, parseStringSinleQuote)
+TEST(ParserTest, parseStringSingleQuote)
 {
     toml::Value v = parse(
         "x = 'foo bar \"foo bar\"'\n");
@@ -193,7 +193,7 @@ TEST(ParserTest, parseStringSinleQuote)
     EXPECT_EQ("foo bar \"foo bar\"", v.get<string>("x"));
 }
 
-TEST(ParserTest, parseStringSinleQuoteMultiLine)
+TEST(ParserTest, parseStringSingleQuoteMultiLine)
 {
     toml::Value v = parse(R"(
 x = '''foo bar "foo bar"'''
