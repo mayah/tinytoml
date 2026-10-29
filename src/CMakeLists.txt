@@ -30,7 +30,7 @@ add_definitions(-DTESTCASE_DIR="${CMAKE_SOURCE_DIR}/../testcase")
 
 
 add_subdirectory(third_party/gtest-1.7.0)
-include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+include_directories(SYSTEM ${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
 include_directories(../include)
 
 mark_as_advanced(
@@ -42,6 +42,11 @@ gtest_force_shared_crt
 
 set_target_properties(gtest gtest_main 
     PROPERTIES FOLDER "Third_party")
+
+if(NOT MSVC)
+    # Suppress warnings from third party code.
+    set_property(TARGET gtest gtest_main APPEND_STRING PROPERTY COMPILE_FLAGS " -w")
+endif()
 
 if(MSVC)
     if (MSVC_VERSION GREATER_EQUAL 1900)
@@ -62,7 +67,7 @@ endif()
 
 function(add_toml_test target)
     add_executable(${target}_test ${target}_test.cc ../include/toml/toml.h)
-    target_link_libraries(${target}_test gtest gtest_main)
+    target_link_libraries(${target}_test gtest_main)
     add_test(${target}_test ${target}_test)
 	set_target_properties(${target}_test
             PROPERTIES
@@ -74,7 +79,7 @@ endfunction()
 
 function(add_toml_link_test target)
     add_executable(${target}_test ${target}_test.cc empty.cc ../include/toml/toml.h)
-    target_link_libraries(${target}_test gtest gtest_main)
+    target_link_libraries(${target}_test gtest_main)
     add_test(${target}_test ${target}_test)
 	set_target_properties(${target}_test
             PROPERTIES
