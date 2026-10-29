@@ -183,6 +183,8 @@ private:
     template<typename T> void assureType() const;
     Value* ensureValue(const std::string& key);
 
+    void writeInlineTable(std::ostream*) const;
+
     template<typename T> struct ValueConverter;
 
     Type type_;
@@ -1357,7 +1359,11 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
         for (size_t i = 0; i < array_->size(); ++i) {
             if (i)
                 (*os) << ", ";
-            (*array_)[i].write(os, keyPrefix, -1);
+            // A table inside an array can't be written as [[...]] here, so write it as an inline table.
+            if ((*array_)[i].is<Table>())
+                (*array_)[i].writeInlineTable(os);
+            else
+                (*array_)[i].write(os, keyPrefix, -1);
         }
         (*os) << ']';
         break;
@@ -1396,6 +1402,25 @@ inline void Value::write(std::ostream* os, const std::string& keyPrefix, int ind
         failwith("writing unknown type");
         break;
     }
+}
+
+inline void Value::writeInlineTable(std::ostream* os) const
+{
+    assert(is<Table>());
+
+    (*os) << '{';
+    bool first = true;
+    for (const auto& kv : *table_) {
+        if (!first)
+            (*os) << ", ";
+        first = false;
+        (*os) << escapeKey(kv.first) << " = ";
+        if (kv.second.is<Table>())
+            kv.second.writeInlineTable(os);
+        else
+            kv.second.write(os, std::string(), -1);
+    }
+    (*os) << '}';
 }
 
 inline void Value::writeFormatted(std::ostream* os, FormatFlag flags) const

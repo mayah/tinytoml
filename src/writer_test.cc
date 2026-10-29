@@ -124,3 +124,47 @@ TEST(WriterTest, write_table_keys)
         EXPECT_EQ(expect, oss.str());
     }
 }
+
+TEST(WriterTest, write_parse_nested_array_of_tables)
+{
+    // {"A": [[{"value": 1}]]}
+    toml::Value object((toml::Table()));
+    object.setChild("value", 1);
+    toml::Array inner;
+    inner.push_back(object);
+    toml::Array outer;
+    outer.push_back(inner);
+    toml::Value root((toml::Table()));
+    root.setChild("A", outer);
+
+    ostringstream oss;
+    root.write(&oss);
+    EXPECT_EQ("A = [[{value = 1}]]\n", oss.str());
+
+    write_parse_compare(root);
+}
+
+TEST(WriterTest, write_parse_nested_array_of_nested_tables)
+{
+    // {"A": [[{"x": {"y": 1}, "z": [{"w": "s"}]}, {}]]}
+    toml::Value object((toml::Table()));
+    object.set("x.y", 1);
+    toml::Value w((toml::Table()));
+    w.setChild("w", "s");
+    toml::Array z;
+    z.push_back(w);
+    object.setChild("z", z);
+    toml::Array inner;
+    inner.push_back(object);
+    inner.push_back(toml::Table());
+    toml::Array outer;
+    outer.push_back(inner);
+    toml::Value root((toml::Table()));
+    root.setChild("A", outer);
+
+    ostringstream oss;
+    root.write(&oss);
+    EXPECT_EQ("A = [[{x = {y = 1}, z = [{w = \"s\"}]}, {}]]\n", oss.str());
+
+    write_parse_compare(root);
+}
