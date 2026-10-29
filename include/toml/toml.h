@@ -1298,7 +1298,7 @@ inline std::string Value::spaces(int num)
     if (num <= 0)
         return std::string();
 
-    return std::string(num, ' ');
+    return std::string(static_cast<std::size_t>(num), ' ');
 }
 
 inline std::string Value::escapeKey(const std::string& key)
